@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Anna Schertler">
+<meta name="dcterms.date" content="2025-07-17">
+
+<title>Plant status harmonisation workflow</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="plant_harmonisation_files/libs/clipboard/clipboard.min.js"></script>
+<script src="plant_harmonisation_files/libs/quarto-html/quarto.js"></script>
+<script src="plant_harmonisation_files/libs/quarto-html/popper.min.js"></script>
+<script src="plant_harmonisation_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="plant_harmonisation_files/libs/quarto-html/anchor.min.js"></script>
+<link href="plant_harmonisation_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="plant_harmonisation_files/libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="plant_harmonisation_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="plant_harmonisation_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="plant_harmonisation_files/libs/bootstrap/bootstrap-1bc8a17f135ab3d594c857e9f48e611b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-full">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#harmonize-gift-wcvp-glonaf" id="toc-harmonize-gift-wcvp-glonaf" class="nav-link active" data-scroll-target="#harmonize-gift-wcvp-glonaf">Harmonize GIFT-WCVP-GloNAF</a>
+  <ul>
+  <li><a href="#general-information" id="toc-general-information" class="nav-link" data-scroll-target="#general-information">General information</a></li>
+  <li><a href="#details-on-the-sources-used" id="toc-details-on-the-sources-used" class="nav-link" data-scroll-target="#details-on-the-sources-used">Details on the sources used</a>
+  <ul class="collapse">
+  <li><a href="#definitions" id="toc-definitions" class="nav-link" data-scroll-target="#definitions"><strong>Definitions</strong></a></li>
+  </ul></li>
+  <li><a href="#proposed-workflow" id="toc-proposed-workflow" class="nav-link" data-scroll-target="#proposed-workflow">Proposed Workflow</a>
+  <ul class="collapse">
+  <li><a href="#prepare-plant-data-sample-dataset" id="toc-prepare-plant-data-sample-dataset" class="nav-link" data-scroll-target="#prepare-plant-data-sample-dataset">Prepare plant data (sample dataset)</a>
+  <ul class="collapse">
+  <li><a href="#wcvp" id="toc-wcvp" class="nav-link" data-scroll-target="#wcvp"><strong>WCVP</strong></a></li>
+  <li><a href="#gift" id="toc-gift" class="nav-link" data-scroll-target="#gift"><strong>GIFT</strong></a></li>
+  <li><a href="#glonaf" id="toc-glonaf" class="nav-link" data-scroll-target="#glonaf"><strong>GloNAF</strong></a></li>
+  </ul></li>
+  <li><a href="#plant-communities-sample-dataset" id="toc-plant-communities-sample-dataset" class="nav-link" data-scroll-target="#plant-communities-sample-dataset"><strong>Plant communities</strong> (sample dataset)</a>
+  <ul class="collapse">
+  <li><a href="#conflicts-record-level" id="toc-conflicts-record-level" class="nav-link" data-scroll-target="#conflicts-record-level">Conflicts (record-level)</a></li>
+  <li><a href="#native-continental-regions" id="toc-native-continental-regions" class="nav-link" data-scroll-target="#native-continental-regions">Native continental regions</a></li>
+  <li><a href="#indirect-conflicts---validation-step-for-gift-data" id="toc-indirect-conflicts---validation-step-for-gift-data" class="nav-link" data-scroll-target="#indirect-conflicts---validation-step-for-gift-data"><strong>Indirect conflicts - validation step for GIFT data</strong></a></li>
+  <li><a href="#final-dataset" id="toc-final-dataset" class="nav-link" data-scroll-target="#final-dataset">Final dataset</a></li>
+  </ul></li>
+  <li><a href="#harmonisation-workflow" id="toc-harmonisation-workflow" class="nav-link" data-scroll-target="#harmonisation-workflow">Harmonisation workflow</a></li>
+  <li><a href="#define-goal" id="toc-define-goal" class="nav-link" data-scroll-target="#define-goal">1. Define Goal</a></li>
+  <li><a href="#native-ranges" id="toc-native-ranges" class="nav-link" data-scroll-target="#native-ranges">2. Native ranges</a></li>
+  <li><a href="#alien-ranges" id="toc-alien-ranges" class="nav-link" data-scroll-target="#alien-ranges">3. Alien ranges</a></li>
+  </ul></li>
+  <li><a href="#visualise" id="toc-visualise" class="nav-link" data-scroll-target="#visualise">Visualise</a>
+  <ul class="collapse">
+  <li><a href="#case-examples" id="toc-case-examples" class="nav-link" data-scroll-target="#case-examples">Case examples</a>
+  <ul class="collapse">
+  <li><a href="#physalis-angulata" id="toc-physalis-angulata" class="nav-link" data-scroll-target="#physalis-angulata"><em>Physalis angulata</em></a></li>
+  <li><a href="#poa-annua" id="toc-poa-annua" class="nav-link" data-scroll-target="#poa-annua"><em>Poa annua</em></a></li>
+  <li><a href="#pinus-sylvestris" id="toc-pinus-sylvestris" class="nav-link" data-scroll-target="#pinus-sylvestris"><strong><em>Pinus sylvestris</em></strong></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content column-page-left" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Plant status harmonisation workflow</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-left">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Anna Schertler </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 17, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="harmonize-gift-wcvp-glonaf" class="level1">
+<h1>Harmonize GIFT-WCVP-GloNAF</h1>
+<section id="general-information" class="level2">
+<h2 class="anchored" data-anchor-id="general-information">General information</h2>
+<p>The aim of this document is to provide a unified workflow that allows to resolve conflicts and harmonise the regional biogeographic status of plants following a common ruleset.</p>
+<p>This workflow is relevant for analyses that</p>
+<ul>
+<li><p>include data from GloNAF, GIFT and/or WCVP</p></li>
+<li><p>use the biogeographic status of the plant</p></li>
+<li><p>are conducted on a regional scale (contrete spatial resolution may differ)</p></li>
+</ul>
+<p>The following steps and recommendations were derived during the 10th annual GloNAF Meeting in Berchtesgarden (23-25 April 2025). The discussion was held on day 3, and the breakout group included:</p>
+<p>Anna Schertler, Holger Kreft, Lirong Cai, Mark van Kleunen, Marten Winter, Nicole Kinlock, Rashmi Paudel</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that this document does <strong>NOT</strong> discuss or provide guidelines for the <strong>REGIONAL standardisation</strong> of the different plant distribution data sources.</p>
+</div>
+</div>
+</section>
+<section id="details-on-the-sources-used" class="level2">
+<h2 class="anchored" data-anchor-id="details-on-the-sources-used">Details on the sources used</h2>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Keep in mind that all three sources differ in their content and also partly in definitions. Depending on your goal, you might use or not use some data (e.g.&nbsp;introduced data from WCVP).</p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/Sources_overview.png" class="img-fluid figure-img" width="1200"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="definitions" class="level3">
+<h3 class="anchored" data-anchor-id="definitions"><strong>Definitions</strong></h3>
+<p>While the definition of native data is consistent, the alien information differs between sources:</p>
+<p><strong><em>WCVP:</em></strong></p>
+<blockquote class="blockquote">
+<p>“Introduced distributions are areas where plants were introduced accidentally or deliberately by humans, which <strong>includes archaeophytes, neophytes, alien, casual, invasive and naturalised plants but not cultivated ones or those merely planted in wild areas but not self-reproducing</strong>. Hybrids that occur naturally between introduced or native and introduced plants are also classified as “introduced”. When the presence of a taxon in a given region or location is not certainly known, a question mark is used, e.g.&nbsp;New Ireland ?; when an exact location within a country is not known, a question mark within brackets is used, e.g.&nbsp;Mexico (?). Distributions of genera are furnished in a relatively simplified form, any endemic regions being given within brackets.”</p>
+</blockquote>
+<p><strong><em>GloNAF:</em></strong></p>
+<p>Includes naturalised alien occurrences, i.e.&nbsp;those that are self-sustaining. Excludes casual occurrences.</p>
+</section>
+</section>
+<section id="proposed-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="proposed-workflow">Proposed Workflow</h2>
+<p>Load packages</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plant data </span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GIFT) </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rWCVP) </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rWCVPdata) </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages("rWCVPdata", repos=c("https://matildabrown.github.io/drat", "https://cloud.r-project.org"))   </span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># data wrangling </span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr) </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)   </span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(openxlsx)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># spatial  </span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra) </span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf) </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>sf<span class="sc">::</span><span class="fu">sf_use_s2</span>(<span class="cn">FALSE</span>) </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rnaturalearth)   </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># visualisation </span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2) </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gridExtra) </span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(grid)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggpattern)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggtext)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># get rnaturalearth </span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>regions_rnaturalearth <span class="ot">&lt;-</span>   <span class="fu">ne_countries</span>(<span class="at">scale =</span> <span class="st">"small"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="prepare-plant-data-sample-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="prepare-plant-data-sample-dataset">Prepare plant data (sample dataset)</h3>
+<p>Choose your spatial resolution.</p>
+<p>For this tutorial the TDWG3-regions are used</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load TDWG3 file </span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>tdwg <span class="ot">&lt;-</span> <span class="fu">vect</span>(<span class="st">"https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson"</span>) <span class="sc">%&gt;%</span> <span class="fu">st_as_sf</span>()</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>tdwg_lvl1 <span class="ot">&lt;-</span> <span class="fu">vect</span>(<span class="st">"https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level1.geojson"</span>) <span class="sc">%&gt;%</span> <span class="fu">st_as_sf</span>() <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>tdwg <span class="sc">%&lt;&gt;%</span> <span class="fu">left_join</span>(., tdwg_lvl1, <span class="at">by =</span> <span class="st">"LEVEL1_COD"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Create some taxon sample data, for this tutorial for 4 genera: <em>Physalis, Pinus, Malus, Poa</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sample_genera <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Physalis"</span>, <span class="st">"Pinus"</span>, <span class="st">"Malus"</span>, <span class="st">"Poa"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="wcvp" class="level4">
+<h4 class="anchored" data-anchor-id="wcvp"><strong>WCVP</strong></h4>
+<p>Version used: 13 (21 May 2024)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># which snapshot of WCVP is used? </span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">citation</span>(<span class="st">"rWCVPdata"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>rWCVPdata redistributes snapshots of the WCVP database. We, therefore,
+encourage you to cite the snapshot version and the WCVP data paper:
+
+  Govaerts R (ed.). 2024. WCVP: World Checklist of Vascular Plants.
+  Facilitated by the Royal Botanic Gardens, Kew.
+  https://doi.org/10.34885/nswv-8994 [v13 accessed 21 May 2024].
+
+  Govaerts, R., Nic Lughadha, E. et al. The World Checklist of Vascular
+  Plants, a continuously updated resource for exploring global plant
+  diversity. Sci Data 8, 215 (2021).
+  https://doi.org/10.1038/s41597-021-00997-6
+
+To see these entries in BibTeX format, use 'print(&lt;citation&gt;,
+bibtex=TRUE)', 'toBibtex(.)', or set
+'options(citation.bibtex.max=999)'.</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># download distribution data for all species in the sample genera</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>wcvp_distribution <span class="ot">&lt;-</span> rWCVPdata<span class="sc">::</span>wcvp_distributions <span class="sc">%&gt;%</span>    </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(rWCVPdata<span class="sc">::</span>wcvp_names, <span class="at">by =</span> <span class="st">"plant_name_id"</span>) <span class="sc">%&gt;%</span>   </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter all accepted Species-level entries for the sample genera:   </span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(taxon_rank <span class="sc">==</span> <span class="st">"Species"</span> <span class="sc">&amp;</span> genus <span class="sc">%in%</span> sample_genera <span class="sc">&amp;</span> taxon_status <span class="sc">==</span> <span class="st">"Accepted"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove extinct or doubful occurrences </span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(location_doubtful <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> extinct <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># create a new column indicating biogeographic status according to wcvp</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">status_wcvp =</span> <span class="fu">case_when</span>(introduced <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">"native"</span>, </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                 introduced <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"alien"</span>),</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_wcvp =</span> <span class="fu">case_when</span>(introduced <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">1</span>, </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                        introduced <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">0</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select relevant columns </span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(plant_name_id, taxon_name, taxon_authors,area, area_code_l3, status_wcvp, status_native_wcvp) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add source </span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"WCVP"</span>) </span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># how many sample species within the genera?  </span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(wcvp_distribution<span class="sc">$</span>taxon_name)) <span class="co"># around 880</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># check if it matches the tdwg 3 regions (it should)</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">unique</span>(wcvp_distribution<span class="sc">$</span>area_code_l3) <span class="sc">%in%</span> tdwg<span class="sc">$</span>LEVEL3_COD)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># use area_code_l3 for matching - rename to tdwg column</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>wcvp_distribution <span class="sc">%&lt;&gt;%</span> <span class="fu">rename</span>(<span class="at">LEVEL3_COD=</span> area_code_l3, </span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>                              <span class="at">LEVEL3_NAM=</span> area)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>wcvp_distribution <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">species =</span> taxon_name) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">genus =</span> <span class="fu">gsub</span>(<span class="st">" [a-z-]+$|×.*?$"</span>, <span class="st">""</span>, species)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, genus, status_wcvp, status_native_wcvp, source, LEVEL3_NAM, LEVEL3_COD)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(wcvp_distribution, <span class="st">"wcvp_sample_data.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="gift" class="level4">
+<h4 class="anchored" data-anchor-id="gift"><strong>GIFT</strong></h4>
+<p>This code is based on the GIFT tutorial (<a href="https://cran.r-project.org/web/packages/GIFT/vignettes/GIFT.html#available-species" class="uri">https://cran.r-project.org/web/packages/GIFT/vignettes/GIFT.html#available-species</a>).</p>
+<p>Version used: 3.2</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the GIFT regions </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>gift_regions <span class="ot">&lt;-</span> GIFT<span class="sc">::</span><span class="fu">GIFT_regions</span>(<span class="at">GIFT_version =</span> <span class="st">"3.2"</span>) <span class="co"># 3.2</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># get the sample species</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>sample_species_GIFT <span class="ot">&lt;-</span> GIFT<span class="sc">::</span><span class="fu">GIFT_species</span>(<span class="at">GIFT_version =</span> <span class="st">"3.2"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(work_genus <span class="sc">%in%</span> sample_genera  ) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(work_species)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># download distribution data for sample species</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>gift_distribution_l <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(sample_species_GIFT), <span class="cf">function</span>(i){  </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(sample_species_GIFT[i])</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> <span class="fu">GIFT_species_distribution</span>(<span class="at">genus =</span> <span class="fu">unlist</span>(<span class="fu">strsplit</span>(sample_species_GIFT[i], <span class="st">" "</span>))[<span class="dv">1</span>],</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">epithet =</span> <span class="fu">unlist</span>(<span class="fu">strsplit</span>(sample_species_GIFT[i], <span class="st">" "</span>))[<span class="dv">2</span>], </span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">GIFT_version =</span> <span class="st">"3.2"</span>)  </span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">nrow</span>(result)<span class="sc">&gt;</span><span class="dv">0</span>){  </span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  result<span class="sc">$</span>input <span class="ot">&lt;-</span> sample_species_GIFT[i]  </span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># format status </span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  result <span class="sc">%&lt;&gt;%</span>   </span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">status_gift =</span> <span class="fu">case_when</span>(native <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"native"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>                                 native <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> quest_native <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"native (?)"</span> ,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                                 native <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> naturalized <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">"alien (non-naturalized)"</span>, </span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>                                 native <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> naturalized <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"alien (naturalized)"</span>, </span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>                                 native <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="fu">is.na</span>(naturalized) <span class="sc">~</span> <span class="st">"alien"</span>, <span class="at">.default =</span> <span class="st">""</span>), </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">source =</span> <span class="st">"GIFT"</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(<span class="at">col =</span> <span class="st">"taxon_name_orig_gift"</span>, genus, species_epithet, subtaxon,<span class="at">sep =</span> <span class="st">" "</span>, </span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">remove =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(input, work_genus<span class="sc">:</span>work_author, taxon_name_orig_gift,author, entity_ID, ref_ID, status_gift, native<span class="sc">:</span>naturalized, endemic_list, source, service, matched<span class="sc">:</span>matched_subtaxon)    <span class="sc">%&gt;%</span> </span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">genus =</span> work_genus, </span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>         <span class="at">species =</span> work_species,</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_gift =</span> native, </span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_naturalized_gift =</span> naturalized, </span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_gift_quest =</span> quest_native,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>         <span class="at">taxon_authors =</span> work_author,</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>         <span class="at">taxon_author_orig_gift =</span> author) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_if</span>(is.character, trimws)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="fu">return</span>(result)   </span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>} </span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  }    </span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>) </span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>gift_distribution <span class="ot">&lt;-</span> gift_distribution_l  <span class="sc">%&gt;%</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># transform list to data frame</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>()  <span class="sc">%&gt;%</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove unresolved </span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(resolved <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add the region names  </span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(.,</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>           gift_regions,</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>           <span class="at">by =</span> <span class="st">"entity_ID"</span>)  <span class="sc">%&gt;%</span> </span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">status_native_gift =</span> <span class="fu">case_when</span>(status_native_gift_quest  <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fu">paste0</span>(status_native_gift, <span class="st">"?"</span>), <span class="at">.default =</span> <span class="fu">as.character</span>(status_native_gift))) </span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a><span class="co"># extract relevant entities </span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>all_entity_ids <span class="ot">&lt;-</span> gift_distribution <span class="sc">%&gt;%</span> </span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(entity_ID) <span class="sc">%&gt;%</span> <span class="fu">unique</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Match with TDWG3</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># first download all relevant shapes using the entity ids of the gift distribution data</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>gift_spatial <span class="ot">&lt;-</span> GIFT<span class="sc">::</span><span class="fu">GIFT_shapes</span>(<span class="at">entity_ID =</span> all_entity_ids, <span class="at">GIFT_version =</span> <span class="st">"3.2"</span>)  </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>sf<span class="sc">::</span><span class="fu">sf_use_s2</span>(<span class="cn">FALSE</span>) </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>gift_spatial <span class="sc">%&lt;&gt;%</span> <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">area_gift =</span> <span class="fu">st_area</span>(.)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(area_gift, <span class="at">.before =</span> <span class="st">"geometry"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>tdwg <span class="sc">%&lt;&gt;%</span> <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">area_tdwg =</span> <span class="fu">st_area</span>(.)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(area_tdwg, <span class="at">.before =</span> <span class="st">"geometry"</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="do">### calculcate overlap </span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co"># check if crs is the same </span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(gift_spatial) <span class="sc">==</span> <span class="fu">st_crs</span>(tdwg) </span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># intersect gift and tdwg regions</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>overlap <span class="ot">&lt;-</span> <span class="fu">st_intersection</span>(gift_spatial, tdwg) </span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate area of overlap: how much of the gift area overlaps with the tdwg region</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>overlap <span class="sc">%&lt;&gt;%</span> <span class="fu">mutate</span>(<span class="at">area_overlap =</span> <span class="fu">st_area</span>(.), </span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                    <span class="at">perc_overlap =</span> <span class="fu">as.numeric</span>(area_overlap <span class="sc">/</span> area_gift)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(area_overlap<span class="sc">:</span>perc_overlap, <span class="at">.before =</span> <span class="st">"geometry"</span>) </span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>overlap <span class="sc">%&lt;&gt;%</span> <span class="fu">select</span>(entity_ID, geo_entity, LEVEL3_NAM, LEVEL3_COD, area_gift, polygon_source, area_tdwg, area_overlap, perc_overlap, geometry)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>overlap <span class="sc">%&lt;&gt;%</span> <span class="fu">filter</span>(</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># keep those with a spatial overlap larger than 0.8</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>                    perc_overlap <span class="sc">&gt;</span> <span class="fl">0.8</span><span class="sc">|</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># or an identical feature name</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                    geo_entity <span class="sc">==</span> LEVEL3_NAM</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>                    ) </span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>overlap <span class="sc">%&lt;&gt;%</span> <span class="fu">st_drop_geometry</span>()</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="co"># add the column indicating the corresponding level 3 name to the gift data</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>gift_distribution <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(.,</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>            overlap <span class="sc">%&gt;%</span> <span class="fu">select</span>(entity_ID, LEVEL3_NAM, LEVEL3_COD, perc_overlap), </span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"entity_ID"</span>)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="co"># keep only those records that have been successfully matched to a TDWG3 region </span></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>gift_distribution <span class="sc">%&lt;&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(LEVEL3_NAM)) </span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="co"># select relevant column </span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>gift_distribution <span class="sc">%&lt;&gt;%</span>   </span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, genus, status_gift,status_native_gift, status_naturalized_gift, status_native_gift_quest, source, LEVEL3_NAM, LEVEL3_COD, taxon_name_orig_gift)</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(gift_distribution_l, gift_regions, gift_spatial, gift_taxa)</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(gift_distribution, <span class="st">"gift_sample_data.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Records that were based on GIFT regions that could not be matched to a TDWG3 region (i.e.&nbsp;overlap is less than 80% with the TDWG region) were discarded.</p>
+<p>This concerned e.g.</p>
+<ul>
+<li><p>regions that exceeded the study resolution, such as “Northern America”, “Russia”</p></li>
+<li><p>smaller custom features that do not fully lie within a TDWG3 region, such as “Smoky Mountain National Park”</p></li>
+</ul>
+</section>
+<section id="glonaf" class="level4">
+<h4 class="anchored" data-anchor-id="glonaf"><strong>GloNAF</strong></h4>
+<p>Version 2.01 from Zenodo, last updated on June 27, 2024 (<a href="https://zenodo.org/records/13235357" class="uri">https://zenodo.org/records/13235357</a>)</p>
+<p>Davis, A. J. S., Dawson, W., Essl, F., Kreft, H., Pergl, J., Pyšek, P., Weigelt, P., Winter, M., &amp; van Kleunen, M. (2024). Global Naturalized Alien Flora (GloNAF). Open access data to support research on understanding global plant invasions. [Data set]. Zenodo. <a href="https://doi.org/10.5281/zenodo.13235357" class="uri">https://doi.org/10.5281/zenodo.13235357</a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>glonaf_flora <span class="ot">&lt;-</span> <span class="fu">read.xlsx</span>(<span class="st">"../../5_Data/GloNAF/GloNAF_2.1/glonaf_flora2.xlsx"</span>) </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>glonaf_list <span class="ot">&lt;-</span> <span class="fu">read.xlsx</span>(<span class="st">"../../5_Data/GloNAF/GloNAF_2.1/glonaf_list.xlsx"</span>) </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>glonaf_region <span class="ot">&lt;-</span>  <span class="fu">read.xlsx</span>(<span class="st">"../../5_Data/GloNAF/GloNAF_2.1/glonaf_region.xlsx"</span>)  </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>glonaf_taxon <span class="ot">&lt;-</span>  <span class="fu">read.xlsx</span>(<span class="st">"../../5_Data/GloNAF/GloNAF_2.1/glonaf_taxon_wcvp.xlsx"</span>)  </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="do">## get the naturalized distribution for relevant species   </span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>glonaf_distribution <span class="ot">&lt;-</span> glonaf_flora <span class="sc">%&gt;%</span>     </span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>family_wcvp) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get taxon info   </span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., glonaf_taxon, <span class="fu">c</span>(<span class="st">"taxon_wcvp_id"</span> <span class="ot">=</span> <span class="st">"id"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get region info</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., glonaf_region, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"region_id"</span> <span class="ot">=</span> <span class="st">"id"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter for sample genera</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">grepl</span>(<span class="fu">paste0</span>(<span class="st">"^"</span>,sample_genera,<span class="st">" "</span>, <span class="at">collapse =</span> <span class="st">"|"</span>), taxa_accepted)) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># format status information </span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">status_native_glonaf =</span> <span class="dv">0</span>, </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_naturalized_glonaf =</span> <span class="dv">1</span>, <span class="co"># all occurrences in GloNAF at least naturalized</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_invasive_glonaf =</span> <span class="fu">case_when</span>(status <span class="sc">==</span> <span class="st">"Invasive"</span> <span class="sc">~</span> <span class="dv">1</span>, <span class="at">.default =</span> <span class="dv">0</span>))</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="do">## spatial standardisation:</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>glonaf_distribution <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get tdwg3 region id from the tdwg4 region id</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">LEVEL3_COD =</span> <span class="fu">case_when</span>(</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>              <span class="co"># if no standard twgd4 id then use the column 'code'</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>              <span class="fu">grepl</span>(<span class="st">"000"</span>, tdwg4_id) <span class="sc">~</span> <span class="fu">gsub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">..*?$|RUS"</span>, <span class="st">""</span>, code),</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>              <span class="co"># otherwise use the tdwg4 id to get level 3 code.</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>              <span class="at">.default =</span> <span class="fu">gsub</span>(<span class="st">"-.*?$|000"</span>, <span class="st">""</span>, tdwg4_id))<span class="co">#,</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>         ) <span class="sc">%&gt;%</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add tdwg3 name via join</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., </span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>            tdwg <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">select</span>(LEVEL3_NAM, LEVEL3_COD), </span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"LEVEL3_COD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add some corrections</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>( </span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># if tdwg equivalent but the join was not successful supplement the name</span></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">LEVEL3_NAM =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(LEVEL3_NAM) <span class="sc">&amp;</span> tdwg3_equivalent <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> name,</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>                                <span class="at">.default =</span> LEVEL3_NAM)) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>  <span class="co"># repeat join</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(LEVEL3_COD)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., </span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>            tdwg <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">select</span>(LEVEL3_NAM, LEVEL3_COD), </span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"LEVEL3_NAM"</span>) </span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>glonaf_distribution <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"GloNAF"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">species =</span> taxa_accepted, </span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>         <span class="at">taxon_name_orig_glonaf =</span> taxon_orig, </span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_glonaf =</span> status) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">genus =</span> <span class="fu">gsub</span>(<span class="st">" [a-z]+$"</span>, <span class="st">""</span>, species)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, genus, status_glonaf, status_native_glonaf, status_naturalized_glonaf, status_invasive_glonaf, source, LEVEL3_NAM, LEVEL3_COD, taxon_name_orig_glonaf)</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="co"># remove objects not needed</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(glonaf_flora, glonaf_list, glonaf_region, glonaf_taxon)</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(glonaf_distribution, <span class="st">"glonaf_sample_data.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="plant-communities-sample-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="plant-communities-sample-dataset"><strong>Plant communities</strong> (sample dataset)</h3>
+<p>Combine the three datasets to get region-taxon combinations that show the different biogeographic status assignments and the sources that support those.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>summarise_group <span class="ot">&lt;-</span> <span class="cf">function</span>(x){<span class="fu">gsub</span>(<span class="st">"^;|;$"</span>, <span class="st">""</span>, <span class="fu">trimws</span>( <span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">unique</span>(<span class="fu">na.omit</span>(x))), <span class="at">collapse =</span> <span class="st">";"</span>)))}</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="do">## load files</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>wcvp_distribution   <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"wcvp_sample_data.rds"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>gift_distribution   <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"gift_sample_data.rds"</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>glonaf_distribution <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"glonaf_sample_data.rds"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(wcvp_distribution,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                               gift_distribution,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                               glonaf_distribution) <span class="sc">%&gt;%</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(LEVEL3_COD)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species, genus, LEVEL3_COD) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_all</span>(., summarise_group)  <span class="sc">%&gt;%</span> <span class="fu">ungroup</span>()</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(wcvp_distribution, gift_distribution, glonaf_distribution)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="conflicts-record-level" class="level4">
+<h4 class="anchored" data-anchor-id="conflicts-record-level">Conflicts (record-level)</h4>
+<p>This step identifies status conflicts that are given for a species-region record, i.e.&nbsp;one source classifies it as alien and the other as native.</p>
+<p><strong>(1) GIFT internal conflicts</strong></p>
+<p>Internal conflicts are <em>only possible for GIFT</em>, as it contains overlapping information and both, native and alien distributions.<br>
+Resolve GIFT status column:</p>
+<p>Change those records to native if at least part of the combined records classify it as native (only non-questionable)</p>
+<ul>
+<li><p>old column: “<strong>status_native_gift”</strong> = contains all grouped status information from GIFT for the species x region combination</p></li>
+<li><p>new column: “<strong>status_native_gift2</strong>” = contains the resolved status, keeping only non-questionable native status in case of multiple categories. NA are records not supported by GIFT.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">###some records have contrasting status data in GIFT (= 0;1):</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># plant_communities %&gt;% pull(status_native_gift) %&gt;% as.factor() %&gt;% summary()</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="co"># remove questionable status</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_gift2 =</span> <span class="fu">gsub</span>(<span class="st">"[0,1]</span><span class="sc">\\</span><span class="st">?"</span>, <span class="st">""</span>, status_native_gift),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_gift2 =</span> <span class="fu">gsub</span>(<span class="st">"^;|;$"</span>, <span class="st">""</span>, status_native_gift2),</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>         <span class="co"># if native/alien conflict, then use alien</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_native_gift2 =</span> <span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">";"</span>, status_native_gift2) <span class="sc">~</span> <span class="st">"1"</span>, </span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">.default =</span> status_native_gift2)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>         ) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># next change the status columns of interest to to numeric</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_at</span>(<span class="fu">vars</span>(status_native_wcvp, status_native_gift2, status_native_glonaf), </span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>            as.numeric) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add the continental level </span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., tdwg <span class="sc">%&gt;%</span> <span class="fu">select</span>(LEVEL3_COD, LEVEL1_NAM), <span class="at">by =</span> <span class="st">"LEVEL3_COD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># order columns</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, genus, LEVEL3_COD, LEVEL3_NAM, LEVEL1_NAM, </span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>         status_native_wcvp, status_native_gift, status_native_gift2, status_naturalized_gift,</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>         status_native_glonaf, status_naturalized_glonaf, status_invasive_glonaf, </span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>         status_wcvp, status_gift, status_glonaf, source,</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>         taxon_name_orig_glonaf, taxon_name_orig_gift)  <span class="sc">%&gt;%</span>  <span class="fu">ungroup</span>()</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.factor</span>(plant_communities<span class="sc">$</span>status_native_gift2))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   0    1 NA's 
+1614 4508 2126 </code></pre>
+</div>
+</div>
+<p><strong>(2) Between database conflicts</strong></p>
+<p>Create logical columns depicting emerging conflicts when doing pairwise comparisons of databases.</p>
+<ul>
+<li><p>TRUE = yes, conflicting status</p></li>
+<li><p>FALSE = no, agreement</p></li>
+<li><p>NA = one or both databases do not support this record - no comparison of status possible</p></li>
+</ul>
+<p><strong>GIFT vs.&nbsp;GloNAF</strong></p>
+<p>Identify cases where GIFT (resolved) and GloNAF contradict each other: This can be only <em>‘a GIFT says its native and GloNAF says its not’</em>-situation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plant_communities %&gt;% group_by(status_native_gift2, status_native_glonaf) %&gt;% summarise(count = n()) </span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> <span class="fu">mutate</span>(</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">status_conflict_gift_glonaf =</span> <span class="fu">case_when</span>(status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                          status_native_gift2 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="cn">FALSE</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">.default =</span> <span class="cn">NA</span>) </span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                             )</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(plant_communities<span class="sc">$</span>status_conflict_gift_glonaf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Mode   FALSE    TRUE    NA's 
+logical    1044     300    6904 </code></pre>
+</div>
+</div>
+<p>300 conflicting status assignments.</p>
+<p><strong>WCVP vs.&nbsp;GloNAF</strong></p>
+<p>Identify cases where GloNAF and WCVP directly contradict each other. Again, this can be only ‘<em>a WCVP says its native and GloNAF says its not</em>’-situation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plant_communities %&gt;% group_by(status_native_wcvp, status_native_glonaf) %&gt;% summarise(count = n()) </span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> <span class="fu">mutate</span>(</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">status_conflict_wcvp_glonaf =</span> <span class="fu">case_when</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                          status_native_wcvp <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="cn">FALSE</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">.default =</span> <span class="cn">NA</span>) </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                             )</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(plant_communities<span class="sc">$</span>status_conflict_wcvp_glonaf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Mode   FALSE    TRUE    NA's 
+logical     909     266    7073 </code></pre>
+</div>
+</div>
+<p>266 conflicting status assignments.</p>
+<p><strong>WCVP vs.&nbsp;GIFT</strong></p>
+<p>Identify cases where both contradict each other.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#plant_communities %&gt;% group_by(status_native_wcvp, status_native_gift2) %&gt;% summarise(count = n()) </span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> <span class="fu">mutate</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">status_conflict_wcvp_gift =</span> <span class="fu">case_when</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> status_native_gift2 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                          status_native_wcvp <span class="sc">==</span> <span class="dv">0</span>  <span class="sc">&amp;</span> status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                          status_native_wcvp <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> status_native_gift2 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                          status_native_wcvp <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">FALSE</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">.default =</span> <span class="cn">NA</span>) </span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                             )</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(plant_communities<span class="sc">$</span>status_conflict_wcvp_gift)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Mode   FALSE    TRUE    NA's 
+logical    4400     322    3526 </code></pre>
+</div>
+</div>
+<p>322 conflicting status assignments.</p>
+</section>
+<section id="native-continental-regions" class="level4">
+<h4 class="anchored" data-anchor-id="native-continental-regions">Native continental regions</h4>
+<p>Define native continental range by creating a field that summarizes all TDWG-LEVEL1 names that contain native regions for each taxon.<br>
+In the next step two versions are created, one that includes native ranges from both, GIFT and WCVP and one that includes only native ranges from WCVP.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Version 1: Include both, GIFT and WCVP  </span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>plant_communities_native_ranges <span class="ot">&lt;-</span> plant_communities <span class="sc">%&gt;%</span>      </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select those records that are considered native in GIFT or in WCVP      </span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span>      </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># group by the plant species name      </span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species) <span class="sc">%&gt;%</span>       </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># create a column listing all continental regions with native occurrences      </span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">native_continent_all =</span> <span class="fu">summarise_group</span>(LEVEL1_NAM))    </span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Version 2: Include WCVP only   </span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>plant_communities_native_ranges2 <span class="ot">&lt;-</span> plant_communities <span class="sc">%&gt;%</span>      </span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select those records that are considered native in GIFT or in WCVP       </span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span>      </span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># group by the plant species name      </span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species) <span class="sc">%&gt;%</span>       </span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># create a column listing all continental regions with native occurrences      </span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">native_continent_wcvp =</span> <span class="fu">summarise_group</span>(LEVEL1_NAM))    </span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="co"># now join back to the main table:  </span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span>       </span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., plant_communities_native_ranges, <span class="at">by =</span> <span class="st">"species"</span>) <span class="sc">%&gt;%</span>       </span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(., plant_communities_native_ranges2, <span class="at">by =</span> <span class="st">"species"</span>) <span class="sc">%&gt;%</span>      </span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(native_continent_all<span class="sc">:</span>native_continent_wcvp, <span class="at">.after =</span> status_glonaf)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(plant_communities_native_ranges, plant_communities_native_ranges2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Compare both versions:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/compare_native_continent1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>When using all native occurrences the number of native continents appears overall higher than when using only wcvp.</p>
+<p>For how many sample taxa is that the case?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># how many sample taxa have more native continents when including GIFT?</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nr_native_continents<span class="sc">$</span>native_continent_all <span class="sc">&gt;</span> nr_native_continents<span class="sc">$</span>native_continent_wcvp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Mode   FALSE    TRUE    NA's 
+logical    1712      42     102 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 42</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2.3%</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>(<span class="dv">42</span><span class="sc">/</span><span class="dv">1856</span>)<span class="sc">*</span><span class="dv">100</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.262931</code></pre>
+</div>
+</div>
+</section>
+<section id="indirect-conflicts---validation-step-for-gift-data" class="level4">
+<h4 class="anchored" data-anchor-id="indirect-conflicts---validation-step-for-gift-data"><strong>Indirect conflicts - validation step for GIFT data</strong></h4>
+<p>In addition to the ‘status_conflict_wcvp_gift’-column, which indicates direct native/alien conflicts with WCVP, flag native GIFT-only records that are outside the native continent according to WCVP, i.e.&nbsp;indirect conflicts.</p>
+<p>Those are region associations that:</p>
+<ul>
+<li><p>are native</p></li>
+<li><p>base this status classification only on GIFT but not on WCVP</p></li>
+<li><p>lvl1 of this region does not overlap with WCVP native continent</p></li>
+</ul>
+<p>Create a new column: ‘<em>status_conflict_gift_wcvp_continent</em>’</p>
+<p>The last conditions ensures that no records are flagged only because of eventually existing country data gaps in WCVP. The assumption is that <em>at least the continental scale is correct.</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>   <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate</span>(<span class="at">status_conflict_gift_wcvp_continent =</span> <span class="fu">case_when</span>(</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>               <span class="co"># Indirect conflict when:</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>               <span class="co"># native</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>               status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>               <span class="co"># region-record only supported by GIFT </span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>               (<span class="fu">is.na</span>(status_native_wcvp)) <span class="sc">&amp;</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>               <span class="co"># continent of the region is NOT included in the list of WCVP native continents. </span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>               <span class="sc">!</span><span class="fu">grepl</span>(<span class="fu">gsub</span>(<span class="st">";"</span>, <span class="st">"|"</span>,LEVEL1_NAM,<span class="at">fixed =</span> T), native_continent_wcvp) <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>               <span class="do">## or, no indirect conflict when : </span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>               <span class="co"># native</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>               status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> </span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>               <span class="co"># only supported by GIFT</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>               <span class="fu">is.na</span>(status_native_wcvp) <span class="sc">&amp;</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>               <span class="co"># the continent of the region is located is included in the list of WCVP native continents. </span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>               <span class="fu">grepl</span>(<span class="fu">gsub</span>(<span class="st">";"</span>, <span class="st">"|"</span>,LEVEL1_NAM,<span class="at">fixed =</span> T), native_continent_wcvp) <span class="sc">~</span> <span class="cn">FALSE</span>, </span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>               <span class="at">.default =</span> <span class="cn">NA</span>)</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>               )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>GIFT validation of native status</strong></p>
+<ul>
+<li><p>direct conflict = WCVP gives a contradicting status for this species-region combination (can be alien or native) –&gt; <em>status_conflict_wcvp_gift</em></p></li>
+<li><p>indirect conflict = species-region combination only supported by GIFT and is outside the native continental region according to WCVP –&gt; <em>status_conflict_gift_wcvp_continent</em></p></li>
+</ul>
+<p>Based on these two types of conflicts create a column <strong><em>gift_native_flag</em></strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> <span class="fu">mutate</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">gift_native_flag =</span> <span class="fu">as.factor</span>(<span class="fu">case_when</span>(status_conflict_wcvp_gift <span class="sc">&amp;</span> status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"TRUE (direct)"</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                        status_conflict_gift_wcvp_continent <span class="sc">~</span> <span class="st">"TRUE (indirect)"</span>, <span class="at">.default =</span> <span class="cn">NA</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">relocate</span>(gift_native_flag, <span class="at">.after =</span> status_conflict_gift_wcvp_continent)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ~3% of the sample species data was flagged</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(plant_communities<span class="sc">$</span>gift_native_flag)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>TRUE (indirect)   TRUE (direct)            NA's 
+            112             190            7946 </code></pre>
+</div>
+</div>
+<p><strong>How to proceed with those flagged records?</strong></p>
+<p>In the meeting different options were discussed, such as discarding those, considering them for a sensitivity analysis or changing them to alien.</p>
+<p><em>The actual workflow chosen will depend on the specific research question and thus, the chosen approach</em></p>
+<ul>
+<li><p><strong>keep as is</strong>: If the primary goal is to change as little as possible in the data, the records can be kept as they are and used later on in a sensitivity analysis (does the exlusion of flagged records change the results?)</p></li>
+<li><p><strong>naturalized only</strong>: If only naturalized occurrences are of interest, eventually discard those (i.e.&nbsp;change status back to empty).</p></li>
+<li><p><strong>correct</strong>: If only interested in biogeographic status (origin), not establishment status, then those could be changed to ‘alien’. If you decide to do so, check random samples to verify that this approach is plausible.</p></li>
+</ul>
+<p><strong>Summarise conflicts</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">status_conflict =</span>  <span class="fu">any</span>(<span class="fu">c_across</span>(<span class="fu">contains</span>(<span class="st">"status_conflict"</span>))<span class="sc">==</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="fu">c</span>(status_conflict, status_conflict_gift_glonaf<span class="sc">:</span>status_conflict_gift_wcvp_continent), </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">.after =</span> status_glonaf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="final-dataset" class="level4">
+<h4 class="anchored" data-anchor-id="final-dataset">Final dataset</h4>
+<p>Each row represents a taxon-region combination and summarises all the status and source information</p>
+<p><strong>Columns:</strong></p>
+<pre><code>| Column                              | Type  | Description                                                                                           |
+|:-----------------------------------|:------|:--------------------------------------------------------------------------------------------------------|
+| species                            | char  | the plant species name after standardisation (WCVP)                                                    |
+| genus                              | char  | the according plant genus                                                                               |
+| LEVEL3_COD                         | char  | TDWG level 3 region code                                                                                |
+| LEVEL3_NAM                         | char  | TDWG level 3 region name                                                                                |
+| LEVEL1_NAM                         | char  | TDWG level 1 region name                                                                                |
+| status_native_wcvp                | int   | binary, indicating whether species in region is native (1) or not (0) according to WCVP                |
+| status_native_gift                | char  | includes conflicts, indicates whether species in region is native (1) or not (0) and questionable (=?) |
+| status_native_gift2               | int   | binary, cleaned version of 'status_native_gift', native (1) or not (0) according to GIFT               |
+| status_naturalized_gift           | char  | includes conflict, not used in this workflow                                                            |
+| status_native_glonaf              | int   | binary, indicates whether species is native or not. All are 0 in GloNAF                                |
+| status_naturalized_glonaf         | int   | binary, indicates naturalisation (1) or not (0)                                                         |
+| status_invasive_glonaf            | int   | binary, indicates invasiveness (1) or not (0)                                                           |
+| status_wcvp                       | char  | biogeographic status according to WCVP                                                                 |
+| status_gift                       | char  | biogeographic status according to GIFT                                                                 |
+| status_glonaf                     | char  | biogeographic status according to GloNAF                                                               |
+| status_conflict                   | log   | is there a conflict                                                                                     |
+| status_conflict_gift_glonaf      | log   | conflict between GIFT and GloNAF                                                                       |
+| status_conflict_wcvp_glonaf      | log   | conflict between WCVP and GloNAF                                                                       |
+| status_conflict_wcvp_gift        | log   | conflict between GIFT and WCVP                                                                         |
+| status_conflict_gift_wcvp_continent | log | native in GIFT but outside native continental range according to WCVP?                                 |
+| gift_native_flag                  | log   | is there a direct or indirect conflict between GIFT native status and WCVP?                            |
+| native_continent_all             | char  | all continents where the plant is native according to combined sources                                 |
+| native_continent_wcvp            | char  | all continents where the plant is native according to WCVP                                             |
+| source                             | char  | one up to three sources (WCVP, GloNAF, GIFT) reporting the species-region-combination                  |
+| taxon_name_orig_glonaf            | char  | taxon name as used in the original source                                                              |
+| taxon_name_orig_gift             | char  | taxon name as used in the original source                                                              |</code></pre>
+</section>
+</section>
+<section id="harmonisation-workflow" class="level3">
+<h3 class="anchored" data-anchor-id="harmonisation-workflow">Harmonisation workflow</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/Workflow.png" class="img-fluid figure-img" width="1200"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>After harmonisation the biogeographic status can be:</p>
+<ul>
+<li><p>“alien”: e.g.&nbsp;from GloNAF, GIFT or WCVP</p></li>
+<li><p>“native”: GIFT or WCVP</p></li>
+<li><p>“alien and native”: <strong>not covered here</strong> - depending on the research question it might be important to acknowledge that the plant is both in the study region of interest. This can be after spatial aggregation of smaller units, or after taxonomic harmonisation (e.g.&nbsp;an infraspecific rank that considered introduced, but dataset is harmonised to species level)</p></li>
+<li><p>undefined</p></li>
+</ul>
+</section>
+<section id="define-goal" class="level3">
+<h3 class="anchored" data-anchor-id="define-goal">1. Define Goal</h3>
+<p><strong>Version 1: Biogeographic status and naturalisation status</strong></p>
+<p>Not only whether a species is native or alien is of interest, but also whether it has persistent self-sustaining populations in the wild. This means that alien occurrences should only include naturalized ones. E.g. when defining a plant community in a region</p>
+<p><strong>Version 2: Biogeographic status only</strong></p>
+<p>Only whether a species is native or alien is of interest. This can be relevant when the status is needed for another data set.</p>
+</section>
+<section id="native-ranges" class="level3">
+<h3 class="anchored" data-anchor-id="native-ranges">2. Native ranges</h3>
+<p>In a first step, native ranges are defined. Those serve as baseline thereafter and should not be changed to alien, i.e.&nbsp;alien ranges then can be added only <em>outside</em> the defined native range.</p>
+<p><strong>Sources to use</strong>:</p>
+<ul>
+<li><p>GIFT</p></li>
+<li><p>WCVP</p></li>
+</ul>
+<p><strong>New columns:</strong></p>
+<ul>
+<li>‘status_combined’: in a first step this is filled with ‘native’ if one of the two sources (GIFT, WCVP) classify it so. Other rows are empty. Note that at this stage the versions do not differ.</li>
+</ul>
+<p><strong>Define native range</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="co"># If WCVP or GIFT status is native then ‚native‘</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_combined =</span> <span class="fu">case_when</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"native"</span>, </span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">.default =</span> <span class="st">""</span>),</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>GIFT validation</strong></p>
+<p><strong>New or changed columns:</strong></p>
+<ul>
+<li><p>‘status_combined_V1a’: If flagged then change to ‘undefined status’, as likely alien but not sure if actually naturalized.</p></li>
+<li><p>‘status_combined_V1b’: Leave as is</p></li>
+<li><p>‘status_combined_V2a’: If flagged then change to ‘alien’, assuming that WCVP as authoritative source is correct here.</p></li>
+<li><p>‘status_combined_V2b’: Leave as is</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="do">### V1 Biogeographic and naturalisation status</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Option 1 -If flagged then change to ‚undefined status‘ (i.e. likely alien but not sure if naturalized)</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_combined_V1a =</span>  <span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">"TRUE"</span>, gift_native_flag) <span class="sc">~</span> <span class="st">""</span>, </span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">.default =</span> status_combined),</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Option 2 - trust the data, leave as is</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_combined_V1b =</span> status_combined,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    <span class="do">### V2 Biogeographic status only</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Version 1 - only interested in biogeographic status (origin), not establishment status </span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_combined_V2a =</span> <span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">"TRUE"</span>, gift_native_flag)  <span class="sc">~</span> <span class="st">"alien"</span>, </span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">.default =</span> status_combined),</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Version 2 - trust the data, leave as is</span></span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_combined_V2b =</span> status_combined) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>status_combined)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="alien-ranges" class="level3">
+<h3 class="anchored" data-anchor-id="alien-ranges">3. Alien ranges</h3>
+<p>In the next step, alien ranges are added. Following the rationale from above, those are only added, if the occurrence was not already classified as native.</p>
+<p><strong>Sources to use</strong>:</p>
+<ul>
+<li><p>GloNAF</p></li>
+<li><p>(WCVP)</p></li>
+<li><p>(GIFT)</p></li>
+</ul>
+<p>Main criterion for inclusion of sources:</p>
+<ul>
+<li>Is research focus on only naturalised occurrences or all introduced occurrences? (–&gt; Version 1)<br>
+Tradeoff between potentially more complete picture and potential overestimation of alien naturalised range as the WCVP category includes both naturalised and casuals</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="do">### V1 - Biogeographic status and naturalisation status</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>         <span class="co"># if not classified as native already and GloNAF status is alien then 'alien'</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_combined_V1a =</span> <span class="fu">case_when</span>(status_combined_V1a <span class="sc">==</span> <span class="st">""</span> <span class="sc">&amp;</span>  status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="st">"alien"</span>, <span class="at">.default =</span> status_combined_V1a), </span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_combined_V1b =</span> <span class="fu">case_when</span>(status_combined_V1b <span class="sc">==</span> <span class="st">""</span> <span class="sc">&amp;</span> status_native_glonaf <span class="sc">==</span> <span class="dv">0</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>                                                  <span class="sc">~</span><span class="st">"alien"</span>, <span class="at">.default =</span> status_combined_V1b), </span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>         <span class="do">### V2 - Biogeographic status only</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>         <span class="co"># if not classified as native or corrected to alien already and WCVP, GIFT or GloNAF status is alien then 'alien'</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_combined_V2a =</span> <span class="fu">case_when</span>(status_combined_V2a <span class="sc">==</span> <span class="st">""</span> <span class="sc">&amp;</span> </span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>                                             (</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>                                              status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> </span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>                                              status_native_wcvp <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>                                              status_native_gift <span class="sc">==</span> <span class="dv">0</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>                                              ) <span class="sc">~</span> <span class="st">"alien"</span>, <span class="at">.default =</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>                                          status_combined_V2a),</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>         <span class="at">status_combined_V2b =</span> <span class="fu">case_when</span>(status_combined_V2b <span class="sc">==</span> <span class="st">""</span> <span class="sc">&amp;</span> </span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>                                           (</span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>                                               status_native_glonaf <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> </span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>                                               status_native_wcvp <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>                                               status_native_gift <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">~</span> <span class="st">"alien"</span>, <span class="at">.default =</span></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>                                          status_combined_V2b)</span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For each version, add a column that indicates the source of the status. This is done using the combined status (i.e.&nbsp;the status assigned in the end and the logical columns of the sources (native indicated yes/no).<br>
+E.g. if the final status is native, the ‘status_native’-columns of WCVP and GIFT are checked, and if the column contains a 1 (TRUE, native) then the source name is pasted to the output. Note that the conditions for the different versions slightly differ, depending on the sources used for different status classes.<br>
+If the status is empty, then the source is GIFT, as this is the only one that also showed occurrences without biogeographic status assigned.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>plant_communities <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Status source V1a</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_source_V1a =</span> <span class="fu">case_when</span>(status_combined_V1a <span class="sc">==</span> <span class="st">"native"</span> <span class="sc">~</span>  </span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>                                         <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>                                                                           status_native_gift2 <span class="sc">==</span> <span class="dv">1</span>)]),</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                                       status_combined_V1a <span class="sc">==</span> <span class="st">"alien"</span> <span class="sc">~</span> <span class="st">"GloNAF"</span>,</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>                                       status_combined_V1a <span class="sc">==</span> <span class="st">""</span> <span class="sc">~</span> <span class="st">"GIFT"</span>, <span class="at">.default =</span> <span class="st">""</span>),</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>   <span class="do">### Status source V1b</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>   <span class="at">status_source_V1b =</span> <span class="fu">case_when</span>(status_combined_V1b <span class="sc">==</span> <span class="st">"native"</span> <span class="sc">~</span>  </span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>                                         <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>                                                                           status_native_gift2 <span class="sc">==</span> <span class="dv">1</span>)]),</span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>                                       status_combined_V1b <span class="sc">==</span> <span class="st">"alien"</span> <span class="sc">~</span> <span class="st">"GloNAF"</span>,</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>                                       status_combined_V1b <span class="sc">==</span> <span class="st">""</span> <span class="sc">~</span> <span class="st">"GIFT"</span>, <span class="at">.default =</span> <span class="st">""</span>),</span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>   </span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a>    <span class="do">### Status source V2a</span></span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">status_source_V2a =</span> <span class="fu">case_when</span>(status_combined_V2a <span class="sc">==</span> <span class="st">"native"</span> <span class="sc">~</span>  </span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a>                                    <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a>                                                                      status_native_gift2 <span class="sc">==</span> <span class="dv">1</span>)]),</span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a>                                 status_combined_V2a <span class="sc">==</span> <span class="st">"alien"</span> <span class="sc">~</span> </span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GloNAF"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">0</span>,</span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>                                                                              status_native_glonaf <span class="sc">==</span> <span class="dv">0</span>,  (status_native_gift2 <span class="sc">==</span> <span class="dv">0</span><span class="sc">|</span> (status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> <span class="fu">grepl</span>(<span class="st">"TRUE"</span>,gift_native_flag))))]),</span>
+<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>), </span>
+<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a>                                status_combined_V1b <span class="sc">==</span> <span class="st">""</span> <span class="sc">~</span> <span class="st">"GIFT"</span>,</span>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">.default =</span> <span class="st">""</span>  ),</span>
+<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a>   </span>
+<span id="cb32-32"><a href="#cb32-32" aria-hidden="true" tabindex="-1"></a>   <span class="do">### Status source V2b</span></span>
+<span id="cb32-33"><a href="#cb32-33" aria-hidden="true" tabindex="-1"></a>   <span class="at">status_source_V2b =</span> <span class="fu">case_when</span>(status_combined_V2b <span class="sc">==</span> <span class="st">"native"</span> <span class="sc">~</span>  </span>
+<span id="cb32-34"><a href="#cb32-34" aria-hidden="true" tabindex="-1"></a>                                    <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb32-35"><a href="#cb32-35" aria-hidden="true" tabindex="-1"></a>                                                                      status_native_gift2 <span class="sc">==</span> <span class="dv">1</span>)]),</span>
+<span id="cb32-36"><a href="#cb32-36" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb32-37"><a href="#cb32-37" aria-hidden="true" tabindex="-1"></a>                                 status_combined_V2b <span class="sc">==</span> <span class="st">"alien"</span> <span class="sc">~</span> </span>
+<span id="cb32-38"><a href="#cb32-38" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">paste</span>(<span class="fu">na.omit</span>(<span class="fu">c</span>(<span class="st">"WCVP"</span>, <span class="st">"GloNAF"</span>, <span class="st">"GIFT"</span>)[<span class="fu">c</span>(status_native_wcvp <span class="sc">==</span> <span class="dv">0</span>,</span>
+<span id="cb32-39"><a href="#cb32-39" aria-hidden="true" tabindex="-1"></a>                                                                              status_native_glonaf <span class="sc">==</span> <span class="dv">0</span>,  (status_native_gift2 <span class="sc">==</span> <span class="dv">0</span><span class="sc">|</span> (status_native_gift2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> <span class="fu">grepl</span>(<span class="st">"TRUE"</span>,gift_native_flag))))]),</span>
+<span id="cb32-40"><a href="#cb32-40" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">collapse =</span> <span class="st">", "</span>), </span>
+<span id="cb32-41"><a href="#cb32-41" aria-hidden="true" tabindex="-1"></a>                               status_combined_V1b <span class="sc">==</span> <span class="st">""</span> <span class="sc">~</span> <span class="st">"GIFT"</span>,</span>
+<span id="cb32-42"><a href="#cb32-42" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">.default =</span> <span class="st">""</span>  )</span>
+<span id="cb32-43"><a href="#cb32-43" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">ungroup</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>Exploration:</strong></p>
+<p>How do the approaches differ in their result?</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/compare_status_version-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How much records are lacking a status after this classification?</strong></p>
+<p>Number differs between approaches. Records without a biogeographic status can have two causes:</p>
+<ol type="1">
+<li><p>record is based on GIFT only and came without a status in the first place</p></li>
+<li><p>record is based on GIFT only and was classified as alien, but not considered</p></li>
+</ol>
+<p>The latter case was discussed at the meeting and it was agreed upon that only the native distribution data should be used (if focus is biogeographic and naturalisation status).</p>
+</section>
+</section>
+<section id="visualise" class="level2">
+<h2 class="anchored" data-anchor-id="visualise">Visualise</h2>
+<p>First create two plotting functions:</p>
+<ul>
+<li><strong>plot_status_overview(Taxon, version, linewidth_cust, gift_flag_col)</strong><br>
+Input:<br>
+
+<ul>
+<li>Taxon: Binomial species name<br>
+</li>
+<li>version: either “V1a”, “V1b”, “V2a”, or “V2b”<br>
+</li>
+<li>linewidth: width of region borders (default = 1)<br>
+</li>
+<li>gift_flag_col: colour of crosshatched pattern for indicating flagged regions (default = “red”)<br>
+Output: a multiplot<br>
+Gives a detailed overview on the chosen version, with one plot showing the harmonised status and three others the contribution of the sources.</li>
+</ul></li>
+<li><strong>plot_status_compare_versions(Taxon, linewidth_cust, gift_flag_col)<br>
+</strong>Input:<br>
+
+<ul>
+<li>Taxon: Binomial species name<br>
+</li>
+<li>linewidth: width of region borders (default = 1)<br>
+</li>
+<li>gift_flag_col: colour of crosshatched pattern for indicating flagged regions (default = “red”)<br>
+Output: a multiplot<br>
+Compares the resulting harmonised status for the four approaches.</li>
+</ul></li>
+</ul>
+<section id="case-examples" class="level3">
+<h3 class="anchored" data-anchor-id="case-examples">Case examples</h3>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that red hatched regions are those that were flagged after GIFT validation, i.e.&nbsp;the native status conflicts either with WCVP (direct conflict) or WCVP native continental range (indirect conflict)</p>
+</div>
+</div>
+<section id="physalis-angulata" class="level4">
+<h4 class="anchored" data-anchor-id="physalis-angulata"><em>Physalis angulata</em></h4>
+<p>now widely distributed and naturalized in tropical and subtropical regions worldwide.</p>
+<p><strong>Result of plant data harmonisation</strong></p>
+<p>Here’s a comparison of the results of the different approaches:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_compare_versions_Physalis_angulata-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here’s a more detailed overview on the</p>
+<p>Version 1a - Biogeographic and naturalisation status (GIFT validation)</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_Physalis_angulata1-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Version 2a - Biogeographic and naturalisation status (GIFT validation)</p>
+<p>According to WCVP and GloNAF alien outside the Americas. Note that there is one error here in WCVP classifying it as native in Albania (this error is already corrected in the WCVP online version).</p>
+<p>GIFT: classifies the species as native in the Americas, but also in tropical regions of Africa and Asia/Australia (= those areas are conflicting areas according to native continent comparison and therefore flagged)</p>
+</section>
+<section id="poa-annua" class="level4">
+<h4 class="anchored" data-anchor-id="poa-annua"><em>Poa annua</em></h4>
+<p>Old-world species of northern hemisphere. Introduced globally.</p>
+<p><strong>Result of plant data harmonisation</strong></p>
+<p>Here’s a comparison of the results of the different approaches:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_compare_versions_Poa_annua-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here’s a more detailed overview on the</p>
+<p>Version 1a - Biogeographic and naturalisation status (GIFT validation)</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_Poa_annua1-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Version 2a - Biogeographic and naturalisation status (GIFT validation)</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_Poa_annua2-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="pinus-sylvestris" class="level4">
+<h4 class="anchored" data-anchor-id="pinus-sylvestris"><strong><em>Pinus sylvestris</em></strong></h4>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_compare_versions_Pinus_sylvestris-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here’s a more detailed overview on the</p>
+<p>Version 1a - Biogeographic and naturalisation status (GIFT validation)</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_Pinus_sylvestris1-1.png" class="img-fluid figure-img" width="1920"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Version 2a - Biogeographic and naturalisation status (GIFT validation)</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="plant_harmonisation_files/figure-html/plot_Pinus_sylvestris2-1.png" class="img-fluid figure-img" width="1440"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

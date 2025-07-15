@@ -1,0 +1,1426 @@
+---
+title: "Plant status harmonisation workflow" 
+author: "Anna Schertler" 
+date: 2025-07-17
+format: html
+toc: true
+toc-depth: 4
+toc-expand: true
+editor: visual 
+page-layout:  full
+---
+
+# Harmonize GIFT-WCVP-GloNAF
+
+## General information
+
+The aim of this document is to provide a unified workflow that allows to resolve conflicts and harmonise the regional biogeographic status of plants following a common ruleset.
+
+This workflow is relevant for analyses that
+
+-   include data from GloNAF, GIFT and/or WCVP
+
+-   use the biogeographic status of the plant
+
+-   are conducted on a regional scale (contrete spatial resolution may differ)
+
+The following steps and recommendations were derived during the 10th annual GloNAF Meeting in Berchtesgarden (23-25 April 2025). The discussion was held on day 3, and the breakout group included:
+
+Anna Schertler, Holger Kreft, Lirong Cai, Mark van Kleunen, Marten Winter, Nicole Kinlock, Rashmi Paudel
+
+::: callout-important
+Note that this document does **NOT** discuss or provide guidelines for the **REGIONAL standardisation** of the different plant distribution data sources.
+:::
+
+## Details on the sources used
+
+::: callout-important
+Keep in mind that all three sources differ in their content and also partly in definitions. Depending on your goal, you might use or not use some data (e.g. introduced data from WCVP).
+:::
+
+```{r}
+#| out.width: "1200px" 
+#| echo: false  
+
+knitr::include_graphics("images/Sources_overview.png")
+```
+
+### **Definitions**
+
+While the definition of native data is consistent, the alien information differs between sources:
+
+***WCVP:***
+
+> "Introduced distributions are areas where plants were introduced accidentally or deliberately by humans, which **includes archaeophytes, neophytes, alien, casual, invasive and naturalised plants but not cultivated ones or those merely planted in wild areas but not self-reproducing**. Hybrids that occur naturally between introduced or native and introduced plants are also classified as “introduced”. When the presence of a taxon in a given region or location is not certainly known, a question mark is used, e.g. New Ireland ?; when an exact location within a country is not known, a question mark within brackets is used, e.g. Mexico (?). Distributions of genera are furnished in a relatively simplified form, any endemic regions being given within brackets."
+
+***GloNAF:***
+
+Includes naturalised alien occurrences, i.e. those that are self-sustaining. Excludes casual occurrences.
+
+## Proposed Workflow
+
+Load packages
+
+```{r load_packages}
+#| message: false
+
+
+# plant data 
+library(GIFT) 
+library(rWCVP) 
+library(rWCVPdata) 
+#install.packages("rWCVPdata", repos=c("https://matildabrown.github.io/drat", "https://cloud.r-project.org"))   
+
+# data wrangling 
+library(dplyr) 
+library(magrittr)   
+library(tidyverse)
+library(openxlsx)
+
+# spatial  
+library(terra) 
+library(sf) 
+sf::sf_use_s2(FALSE) 
+library(rnaturalearth)   
+
+# visualisation 
+library(ggplot2) 
+library(gridExtra) 
+library(grid)
+library(ggpattern)
+library(patchwork)
+library(ggtext)
+
+# get rnaturalearth 
+regions_rnaturalearth <-   ne_countries(scale = "small", returnclass = "sf")  
+```
+
+### Prepare plant data (sample dataset)
+
+Choose your spatial resolution.
+
+For this tutorial the TDWG3-regions are used
+
+```{r load_study_regions}
+# load TDWG3 file 
+tdwg <- vect("https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson") %>% st_as_sf()
+tdwg_lvl1 <- vect("https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level1.geojson") %>% st_as_sf() %>% st_drop_geometry()
+
+tdwg %<>% left_join(., tdwg_lvl1, by = "LEVEL1_COD")
+```
+
+Create some taxon sample data, for this tutorial for 4 genera: *Physalis, Pinus, Malus, Poa*.
+
+```{r sample_genera}
+sample_genera <- c("Physalis", "Pinus", "Malus", "Poa")
+```
+
+#### **WCVP**
+
+Version used: 13 (21 May 2024)
+
+```{r wcvp_citation}
+
+# which snapshot of WCVP is used? 
+citation("rWCVPdata") 
+
+```
+
+```{r wcvp_sample_data}
+#| eval: false
+
+# download distribution data for all species in the sample genera
+wcvp_distribution <- rWCVPdata::wcvp_distributions %>%    
+  left_join(rWCVPdata::wcvp_names, by = "plant_name_id") %>%   
+  # filter all accepted Species-level entries for the sample genera:   
+  filter(taxon_rank == "Species" & genus %in% sample_genera & taxon_status == "Accepted") %>% 
+  # remove extinct or doubful occurrences 
+  filter(location_doubtful == 0 & extinct == 0) %>% 
+  # create a new column indicating biogeographic status according to wcvp
+  mutate(status_wcvp = case_when(introduced == 0 ~ "native", 
+                                 introduced == 1 ~ "alien"),
+         status_native_wcvp = case_when(introduced == 0 ~ 1, 
+                                        introduced == 1 ~ 0)) %>% 
+  # select relevant columns 
+  select(plant_name_id, taxon_name, taxon_authors,area, area_code_l3, status_wcvp, status_native_wcvp) %>% 
+  # add source 
+  mutate(source = "WCVP") 
+
+
+# how many sample species within the genera?  
+length(unique(wcvp_distribution$taxon_name)) # around 880
+
+# check if it matches the tdwg 3 regions (it should)
+all(unique(wcvp_distribution$area_code_l3) %in% tdwg$LEVEL3_COD)
+
+# use area_code_l3 for matching - rename to tdwg column
+wcvp_distribution %<>% rename(LEVEL3_COD= area_code_l3, 
+                              LEVEL3_NAM= area)
+
+wcvp_distribution %<>% 
+  rename(species = taxon_name) %>% 
+  mutate(genus = gsub(" [a-z-]+$|×.*?$", "", species)) %>%
+  select(species, genus, status_wcvp, status_native_wcvp, source, LEVEL3_NAM, LEVEL3_COD)
+
+saveRDS(wcvp_distribution, "wcvp_sample_data.rds")
+```
+
+#### **GIFT**
+
+This code is based on the GIFT tutorial (<https://cran.r-project.org/web/packages/GIFT/vignettes/GIFT.html#available-species>).
+
+Version used: 3.2
+
+```{r gift_distribution}
+#| eval: false
+
+# Get the GIFT regions 
+gift_regions <- GIFT::GIFT_regions(GIFT_version = "3.2") # 3.2
+
+# get the sample species
+sample_species_GIFT <- GIFT::GIFT_species(GIFT_version = "3.2") %>%
+  filter(work_genus %in% sample_genera  ) %>% pull(work_species)
+
+# download distribution data for sample species
+gift_distribution_l <- lapply(1:length(sample_species_GIFT), function(i){  
+  print(sample_species_GIFT[i])
+  
+  result <- GIFT_species_distribution(genus = unlist(strsplit(sample_species_GIFT[i], " "))[1],
+                                      epithet = unlist(strsplit(sample_species_GIFT[i], " "))[2], 
+                                      GIFT_version = "3.2")  
+  
+if(nrow(result)>0){  
+  result$input <- sample_species_GIFT[i]  
+  
+  # format status 
+  result %<>%   
+  mutate(status_gift = case_when(native == 1 ~ "native",
+                                 native == 1 & quest_native == 1 ~ "native (?)" ,
+                                 native == 0 & naturalized == 0 ~ "alien (non-naturalized)", 
+                                 native == 0 & naturalized == 1 ~ "alien (naturalized)", 
+                                 native == 0 & is.na(naturalized) ~ "alien", .default = ""), 
+         source = "GIFT") %>%  
+  unite(col = "taxon_name_orig_gift", genus, species_epithet, subtaxon,sep = " ", 
+        na.rm = TRUE, remove = TRUE) %>%  
+  dplyr::select(input, work_genus:work_author, taxon_name_orig_gift,author, entity_ID, ref_ID, status_gift, native:naturalized, endemic_list, source, service, matched:matched_subtaxon)    %>% 
+  rename(genus = work_genus, 
+         species = work_species,
+         status_native_gift = native, 
+         status_naturalized_gift = naturalized, 
+         status_native_gift_quest = quest_native,
+         taxon_authors = work_author,
+         taxon_author_orig_gift = author) %>% 
+  mutate_if(is.character, trimws)
+
+return(result)   
+} 
+  }    
+) 
+
+
+gift_distribution <- gift_distribution_l  %>%
+  # transform list to data frame
+  bind_rows()  %>%
+  # remove unresolved 
+  filter(resolved == 1) %>%
+  # add the region names  
+  left_join(.,
+           gift_regions,
+           by = "entity_ID")  %>% 
+  mutate(status_native_gift = case_when(status_native_gift_quest  == 1 ~ paste0(status_native_gift, "?"), .default = as.character(status_native_gift))) 
+
+# extract relevant entities 
+all_entity_ids <- gift_distribution %>% 
+  pull(entity_ID) %>% unique() 
+
+
+```
+
+Match with TDWG3
+
+```{r gift_spatial}
+#| eval: false
+#| warning: false
+
+# first download all relevant shapes using the entity ids of the gift distribution data
+gift_spatial <- GIFT::GIFT_shapes(entity_ID = all_entity_ids, GIFT_version = "3.2")  
+
+sf::sf_use_s2(FALSE) 
+
+gift_spatial %<>% st_make_valid() %>% 
+  mutate(area_gift = st_area(.)) %>% 
+  relocate(area_gift, .before = "geometry")
+
+tdwg %<>% st_make_valid() %>% 
+  mutate(area_tdwg = st_area(.)) %>% 
+  relocate(area_tdwg, .before = "geometry")
+
+### calculcate overlap 
+# check if crs is the same 
+st_crs(gift_spatial) == st_crs(tdwg) 
+
+# intersect gift and tdwg regions
+overlap <- st_intersection(gift_spatial, tdwg) 
+
+# calculate area of overlap: how much of the gift area overlaps with the tdwg region
+overlap %<>% mutate(area_overlap = st_area(.), 
+                    perc_overlap = as.numeric(area_overlap / area_gift)) %>% 
+  relocate(area_overlap:perc_overlap, .before = "geometry") 
+
+overlap %<>% select(entity_ID, geo_entity, LEVEL3_NAM, LEVEL3_COD, area_gift, polygon_source, area_tdwg, area_overlap, perc_overlap, geometry)
+
+overlap %<>% filter(
+                    # keep those with a spatial overlap larger than 0.8
+                    perc_overlap > 0.8|
+                    # or an identical feature name
+                    geo_entity == LEVEL3_NAM
+                    ) 
+overlap %<>% st_drop_geometry()
+
+
+# add the column indicating the corresponding level 3 name to the gift data
+gift_distribution %<>% 
+  left_join(.,
+            overlap %>% select(entity_ID, LEVEL3_NAM, LEVEL3_COD, perc_overlap), 
+            by = "entity_ID")
+
+# keep only those records that have been successfully matched to a TDWG3 region 
+gift_distribution %<>% filter(!is.na(LEVEL3_NAM)) 
+
+
+# select relevant column 
+gift_distribution %<>%   
+  select(species, genus, status_gift,status_native_gift, status_naturalized_gift, status_native_gift_quest, source, LEVEL3_NAM, LEVEL3_COD, taxon_name_orig_gift)
+
+
+rm(gift_distribution_l, gift_regions, gift_spatial, gift_taxa)
+
+saveRDS(gift_distribution, "gift_sample_data.rds")
+```
+
+Records that were based on GIFT regions that could not be matched to a TDWG3 region (i.e. overlap is less than 80% with the TDWG region) were discarded.
+
+This concerned e.g.
+
+-   regions that exceeded the study resolution, such as "Northern America", "Russia"
+
+-   smaller custom features that do not fully lie within a TDWG3 region, such as "Smoky Mountain National Park"
+
+#### **GloNAF**
+
+Version 2.01 from Zenodo, last updated on June 27, 2024 (<https://zenodo.org/records/13235357>)
+
+Davis, A. J. S., Dawson, W., Essl, F., Kreft, H., Pergl, J., Pyšek, P., Weigelt, P., Winter, M., & van Kleunen, M. (2024). Global Naturalized Alien Flora (GloNAF). Open access data to support research on understanding global plant invasions. \[Data set\]. Zenodo. <https://doi.org/10.5281/zenodo.13235357>
+
+```{r glonaf_distribution}
+#| eval: false
+
+glonaf_flora <- read.xlsx("../../5_Data/GloNAF/GloNAF_2.1/glonaf_flora2.xlsx") 
+glonaf_list <- read.xlsx("../../5_Data/GloNAF/GloNAF_2.1/glonaf_list.xlsx") 
+glonaf_region <-  read.xlsx("../../5_Data/GloNAF/GloNAF_2.1/glonaf_region.xlsx")  
+glonaf_taxon <-  read.xlsx("../../5_Data/GloNAF/GloNAF_2.1/glonaf_taxon_wcvp.xlsx")  
+
+
+## get the naturalized distribution for relevant species   
+glonaf_distribution <- glonaf_flora %>%     
+  select(-family_wcvp) %>% 
+  # get taxon info   
+  left_join(., glonaf_taxon, c("taxon_wcvp_id" = "id")) %>%
+  # get region info
+  left_join(., glonaf_region, by = c("region_id" = "id")) %>%
+  # filter for sample genera
+  filter(grepl(paste0("^",sample_genera," ", collapse = "|"), taxa_accepted)) %>% 
+  # format status information 
+  mutate(status_native_glonaf = 0, 
+         status_naturalized_glonaf = 1, # all occurrences in GloNAF at least naturalized
+         status_invasive_glonaf = case_when(status == "Invasive" ~ 1, .default = 0))
+
+## spatial standardisation:
+glonaf_distribution %<>%
+  # get tdwg3 region id from the tdwg4 region id
+  mutate(LEVEL3_COD = case_when(
+              # if no standard twgd4 id then use the column 'code'
+              grepl("000", tdwg4_id) ~ gsub("\\..*?$|RUS", "", code),
+              # otherwise use the tdwg4 id to get level 3 code.
+              .default = gsub("-.*?$|000", "", tdwg4_id))#,
+         ) %>%
+  # add tdwg3 name via join
+  left_join(., 
+            tdwg %>% st_drop_geometry() %>% select(LEVEL3_NAM, LEVEL3_COD), 
+            by = "LEVEL3_COD") %>%
+  # add some corrections
+  mutate( 
+    # if tdwg equivalent but the join was not successful supplement the name
+    LEVEL3_NAM = case_when(is.na(LEVEL3_NAM) & tdwg3_equivalent == 1 ~ name,
+                                .default = LEVEL3_NAM)) %>% 
+  # repeat join
+  select(-c(LEVEL3_COD)) %>%
+  left_join(., 
+            tdwg %>% st_drop_geometry() %>% select(LEVEL3_NAM, LEVEL3_COD), 
+            by = "LEVEL3_NAM") 
+
+
+glonaf_distribution %<>% 
+  mutate(source = "GloNAF") %>% 
+  rename(species = taxa_accepted, 
+         taxon_name_orig_glonaf = taxon_orig, 
+         status_glonaf = status) %>% 
+  mutate(genus = gsub(" [a-z]+$", "", species)) %>%
+  select(species, genus, status_glonaf, status_native_glonaf, status_naturalized_glonaf, status_invasive_glonaf, source, LEVEL3_NAM, LEVEL3_COD, taxon_name_orig_glonaf)
+
+# remove objects not needed
+rm(glonaf_flora, glonaf_list, glonaf_region, glonaf_taxon)
+
+saveRDS(glonaf_distribution, "glonaf_sample_data.rds")
+```
+
+### **Plant communities** (sample dataset)
+
+Combine the three datasets to get region-taxon combinations that show the different biogeographic status assignments and the sources that support those.
+
+```{r combine_sources}
+summarise_group <- function(x){gsub("^;|;$", "", trimws( paste(sort(unique(na.omit(x))), collapse = ";")))}
+
+## load files
+wcvp_distribution   <- readRDS("wcvp_sample_data.rds")
+gift_distribution   <- readRDS("gift_sample_data.rds")
+glonaf_distribution <- readRDS("glonaf_sample_data.rds")
+
+plant_communities <- bind_rows(wcvp_distribution,
+                               gift_distribution,
+                               glonaf_distribution) %>%
+  filter(!is.na(LEVEL3_COD)) %>% 
+  group_by(species, genus, LEVEL3_COD) %>% 
+  summarise_all(., summarise_group)  %>% ungroup()
+
+rm(wcvp_distribution, gift_distribution, glonaf_distribution)
+```
+
+#### Conflicts (record-level)
+
+This step identifies status conflicts that are given for a species-region record, i.e. one source classifies it as alien and the other as native.
+
+**(1) GIFT internal conflicts**
+
+Internal conflicts are *only possible for GIFT*, as it contains overlapping information and both, native and alien distributions.\
+Resolve GIFT status column:
+
+Change those records to native if at least part of the combined records classify it as native (only non-questionable)
+
+-   old column: "**status_native_gift"** = contains all grouped status information from GIFT for the species x region combination
+
+-   new column: "**status_native_gift2**" = contains the resolved status, keeping only non-questionable native status in case of multiple categories. NA are records not supported by GIFT.
+
+```{r resolve_gift_status}
+###some records have contrasting status data in GIFT (= 0;1):
+# plant_communities %>% pull(status_native_gift) %>% as.factor() %>% summary()
+
+plant_communities %<>% 
+  mutate(# remove questionable status
+         status_native_gift2 = gsub("[0,1]\\?", "", status_native_gift),
+         status_native_gift2 = gsub("^;|;$", "", status_native_gift2),
+         # if native/alien conflict, then use alien
+         status_native_gift2 = case_when(grepl(";", status_native_gift2) ~ "1", 
+                                         .default = status_native_gift2)
+         ) %>% 
+  # next change the status columns of interest to to numeric
+  mutate_at(vars(status_native_wcvp, status_native_gift2, status_native_glonaf), 
+            as.numeric) %>% 
+  # add the continental level 
+  left_join(., tdwg %>% select(LEVEL3_COD, LEVEL1_NAM), by = "LEVEL3_COD") %>%
+  # order columns
+  select(species, genus, LEVEL3_COD, LEVEL3_NAM, LEVEL1_NAM, 
+         status_native_wcvp, status_native_gift, status_native_gift2, status_naturalized_gift,
+         status_native_glonaf, status_naturalized_glonaf, status_invasive_glonaf, 
+         status_wcvp, status_gift, status_glonaf, source,
+         taxon_name_orig_glonaf, taxon_name_orig_gift)  %>%  ungroup()
+
+summary(as.factor(plant_communities$status_native_gift2))
+```
+
+**(2) Between database conflicts**
+
+Create logical columns depicting emerging conflicts when doing pairwise comparisons of databases.
+
+-   TRUE = yes, conflicting status
+
+-   FALSE = no, agreement
+
+-   NA = one or both databases do not support this record - no comparison of status possible
+
+**GIFT vs. GloNAF**
+
+Identify cases where GIFT (resolved) and GloNAF contradict each other: This can be only *'a GIFT says its native and GloNAF says its not'*-situation.
+
+```{r conflicts_gift_glonaf}
+
+# plant_communities %>% group_by(status_native_gift2, status_native_glonaf) %>% summarise(count = n()) 
+
+plant_communities %<>% mutate(
+  status_conflict_gift_glonaf = case_when(status_native_gift2 == 1 & status_native_glonaf == 0 ~ TRUE,
+                                          status_native_gift2 == 0 & status_native_glonaf == 0 ~ FALSE,
+                                          .default = NA) 
+                             )
+
+summary(plant_communities$status_conflict_gift_glonaf)
+
+```
+
+300 conflicting status assignments.
+
+**WCVP vs. GloNAF**
+
+Identify cases where GloNAF and WCVP directly contradict each other. Again, this can be only '*a WCVP says its native and GloNAF says its not*'-situation.
+
+```{r conflicts_wcvp_glonaf}
+
+# plant_communities %>% group_by(status_native_wcvp, status_native_glonaf) %>% summarise(count = n()) 
+
+plant_communities %<>% mutate(
+  status_conflict_wcvp_glonaf = case_when(status_native_wcvp == 1 & status_native_glonaf == 0 ~ TRUE,
+                                          status_native_wcvp == 0 & status_native_glonaf == 0 ~ FALSE,
+                                          .default = NA) 
+                             )
+summary(plant_communities$status_conflict_wcvp_glonaf)
+
+```
+
+266 conflicting status assignments.
+
+**WCVP vs. GIFT**
+
+Identify cases where both contradict each other.
+
+```{r conlifcts_wcvp_gift}
+
+#plant_communities %>% group_by(status_native_wcvp, status_native_gift2) %>% summarise(count = n()) 
+
+plant_communities %<>% mutate(
+  status_conflict_wcvp_gift = case_when(status_native_wcvp == 1 & status_native_gift2 == 0 |
+                                          status_native_wcvp == 0  & status_native_gift2 == 1 ~ TRUE,
+                                          status_native_wcvp == 0 & status_native_gift2 == 0 |
+                                          status_native_wcvp == 1 & status_native_gift2 == 1 ~ FALSE,
+                                          .default = NA) 
+                             )
+summary(plant_communities$status_conflict_wcvp_gift)
+```
+
+322 conflicting status assignments.
+
+#### Native continental regions
+
+Define native continental range by creating a field that summarizes all TDWG-LEVEL1 names that contain native regions for each taxon. \
+In the next step two versions are created, one that includes native ranges from both, GIFT and WCVP and one that includes only native ranges from WCVP.
+
+```{r define_native_continent}
+ 
+## Version 1: Include both, GIFT and WCVP  
+plant_communities_native_ranges <- plant_communities %>%      
+  # select those records that are considered native in GIFT or in WCVP      
+  filter(status_native_gift2 == 1 | status_native_wcvp == 1) %>%      
+  # group by the plant species name      
+  group_by(species) %>%       
+  # create a column listing all continental regions with native occurrences      
+  summarise(native_continent_all = summarise_group(LEVEL1_NAM))    
+
+## Version 2: Include WCVP only   
+plant_communities_native_ranges2 <- plant_communities %>%      
+  # select those records that are considered native in GIFT or in WCVP       
+  filter(status_native_wcvp == 1) %>%      
+  # group by the plant species name      
+  group_by(species) %>%       
+  # create a column listing all continental regions with native occurrences      
+  summarise(native_continent_wcvp = summarise_group(LEVEL1_NAM))    
+
+# now join back to the main table:  
+plant_communities %<>%       
+  left_join(., plant_communities_native_ranges, by = "species") %>%       
+  left_join(., plant_communities_native_ranges2, by = "species") %>%      
+  relocate(native_continent_all:native_continent_wcvp, .after = status_glonaf)
+
+rm(plant_communities_native_ranges, plant_communities_native_ranges2)
+
+
+```
+
+Compare both versions:
+
+```{r compare_native_continent1}
+#| warning: false
+#| echo: false
+#| message: false
+
+nr_native_continents <- plant_communities %>% 
+  # get native continents for each taxon
+  select(species, native_continent_all, native_continent_wcvp) %>% 
+  distinct() %>% 
+  # count number of separators plus 1 to get number of listed continental regions
+  mutate(all =  str_count(native_continent_all, ";")+1, 
+         wcvp = str_count(native_continent_wcvp, ";")+1) %>% 
+  pivot_longer(cols = c("all", "wcvp", ) ,values_to = "n_continental", names_to = "version" )
+
+ggplot(data = nr_native_continents) + 
+  geom_jitter(aes(x= version, y = n_continental, group = version, col = n_continental)) +
+  theme(text = element_text(size = 14)) +
+  theme_minimal()
+ 
+```
+
+When using all native occurrences the number of native continents appears overall higher than when using only wcvp.
+
+For how many sample taxa is that the case?
+
+```{r compare_native_continent2}
+# how many sample taxa have more native continents when including GIFT?
+summary(nr_native_continents$native_continent_all > nr_native_continents$native_continent_wcvp)
+# 42
+
+# 2.3%
+(42/1856)*100
+
+```
+
+```{r compare_native_continent3}
+#| echo: false
+
+rm(nr_native_continents)
+```
+
+#### **Indirect conflicts - validation step for GIFT data**
+
+In addition to the 'status_conflict_wcvp_gift'-column, which indicates direct native/alien conflicts with WCVP, flag native GIFT-only records that are outside the native continent according to WCVP, i.e. indirect conflicts.
+
+Those are region associations that:
+
+-   are native
+
+-   base this status classification only on GIFT but not on WCVP
+
+-   lvl1 of this region does not overlap with WCVP native continent
+
+Create a new column: '*status_conflict_gift_wcvp_continent*'
+
+The last conditions ensures that no records are flagged only because of eventually existing country data gaps in WCVP. The assumption is that *at least the continental scale is correct.*
+
+```{r status_native_GIFT_validation}
+
+plant_communities %<>% 
+   rowwise() %>% 
+   mutate(status_conflict_gift_wcvp_continent = case_when(
+               # Indirect conflict when:
+               # native
+               status_native_gift2 == 1 & 
+               # region-record only supported by GIFT 
+               (is.na(status_native_wcvp)) &
+               # continent of the region is NOT included in the list of WCVP native continents. 
+               !grepl(gsub(";", "|",LEVEL1_NAM,fixed = T), native_continent_wcvp) ~ TRUE,
+               ## or, no indirect conflict when : 
+               # native
+               status_native_gift2 == 1 & 
+               # only supported by GIFT
+               is.na(status_native_wcvp) &
+               # the continent of the region is located is included in the list of WCVP native continents. 
+               grepl(gsub(";", "|",LEVEL1_NAM,fixed = T), native_continent_wcvp) ~ FALSE, 
+               .default = NA)
+               )
+```
+
+**GIFT validation of native status**
+
+-   direct conflict = WCVP gives a contradicting status for this species-region combination (can be alien or native) –\> *status_conflict_wcvp_gift*
+
+-   indirect conflict = species-region combination only supported by GIFT and is outside the native continental region according to WCVP –\> *status_conflict_gift_wcvp_continent*
+
+Based on these two types of conflicts create a column ***gift_native_flag***
+
+```{r status_native_gift_flag_col}
+
+plant_communities %<>% mutate(
+  gift_native_flag = as.factor(case_when(status_conflict_wcvp_gift & status_native_gift2 == 1 ~ "TRUE (direct)",
+                        status_conflict_gift_wcvp_continent ~ "TRUE (indirect)", .default = NA)
+  )
+) %>% relocate(gift_native_flag, .after = status_conflict_gift_wcvp_continent)
+
+# ~3% of the sample species data was flagged
+summary(plant_communities$gift_native_flag)
+
+
+```
+
+**How to proceed with those flagged records?**
+
+In the meeting different options were discussed, such as discarding those, considering them for a sensitivity analysis or changing them to alien.
+
+*The actual workflow chosen will depend on the specific research question and thus, the chosen approach*
+
+-   **keep as is**: If the primary goal is to change as little as possible in the data, the records can be kept as they are and used later on in a sensitivity analysis (does the exlusion of flagged records change the results?)
+
+-   **naturalized only**: If only naturalized occurrences are of interest, eventually discard those (i.e. change status back to empty).
+
+-   **correct**: If only interested in biogeographic status (origin), not establishment status, then those could be changed to 'alien'. If you decide to do so, check random samples to verify that this approach is plausible.
+
+**Summarise conflicts**
+
+```{r}
+plant_communities %<>% 
+  rowwise() %>%
+  mutate(status_conflict =  any(c_across(contains("status_conflict"))== TRUE)) %>% 
+  relocate(c(status_conflict, status_conflict_gift_glonaf:status_conflict_gift_wcvp_continent), 
+           .after = status_glonaf)
+```
+
+#### Final dataset
+
+Each row represents a taxon-region combination and summarises all the status and source information
+
+**Columns:**
+
+```         
+| Column                              | Type  | Description                                                                                           |
+|:-----------------------------------|:------|:--------------------------------------------------------------------------------------------------------|
+| species                            | char  | the plant species name after standardisation (WCVP)                                                    |
+| genus                              | char  | the according plant genus                                                                               |
+| LEVEL3_COD                         | char  | TDWG level 3 region code                                                                                |
+| LEVEL3_NAM                         | char  | TDWG level 3 region name                                                                                |
+| LEVEL1_NAM                         | char  | TDWG level 1 region name                                                                                |
+| status_native_wcvp                | int   | binary, indicating whether species in region is native (1) or not (0) according to WCVP                |
+| status_native_gift                | char  | includes conflicts, indicates whether species in region is native (1) or not (0) and questionable (=?) |
+| status_native_gift2               | int   | binary, cleaned version of 'status_native_gift', native (1) or not (0) according to GIFT               |
+| status_naturalized_gift           | char  | includes conflict, not used in this workflow                                                            |
+| status_native_glonaf              | int   | binary, indicates whether species is native or not. All are 0 in GloNAF                                |
+| status_naturalized_glonaf         | int   | binary, indicates naturalisation (1) or not (0)                                                         |
+| status_invasive_glonaf            | int   | binary, indicates invasiveness (1) or not (0)                                                           |
+| status_wcvp                       | char  | biogeographic status according to WCVP                                                                 |
+| status_gift                       | char  | biogeographic status according to GIFT                                                                 |
+| status_glonaf                     | char  | biogeographic status according to GloNAF                                                               |
+| status_conflict                   | log   | is there a conflict                                                                                     |
+| status_conflict_gift_glonaf      | log   | conflict between GIFT and GloNAF                                                                       |
+| status_conflict_wcvp_glonaf      | log   | conflict between WCVP and GloNAF                                                                       |
+| status_conflict_wcvp_gift        | log   | conflict between GIFT and WCVP                                                                         |
+| status_conflict_gift_wcvp_continent | log | native in GIFT but outside native continental range according to WCVP?                                 |
+| gift_native_flag                  | log   | is there a direct or indirect conflict between GIFT native status and WCVP?                            |
+| native_continent_all             | char  | all continents where the plant is native according to combined sources                                 |
+| native_continent_wcvp            | char  | all continents where the plant is native according to WCVP                                             |
+| source                             | char  | one up to three sources (WCVP, GloNAF, GIFT) reporting the species-region-combination                  |
+| taxon_name_orig_glonaf            | char  | taxon name as used in the original source                                                              |
+| taxon_name_orig_gift             | char  | taxon name as used in the original source                                                              |
+```
+
+### Harmonisation workflow
+
+```{r}
+#| out.width: "1200px" 
+#| echo: false  
+
+knitr::include_graphics("images/Workflow.png")
+
+
+```
+
+After harmonisation the biogeographic status can be:
+
+-   "alien": e.g. from GloNAF, GIFT or WCVP
+
+-   "native": GIFT or WCVP
+
+-   "alien and native": **not covered here** - depending on the research question it might be important to acknowledge that the plant is both in the study region of interest. This can be after spatial aggregation of smaller units, or after taxonomic harmonisation (e.g. an infraspecific rank that considered introduced, but dataset is harmonised to species level)
+
+-   undefined
+
+### 1. Define Goal
+
+**Version 1: Biogeographic status and naturalisation status**
+
+Not only whether a species is native or alien is of interest, but also whether it has persistent self-sustaining populations in the wild. This means that alien occurrences should only include naturalized ones. E.g. when defining a plant community in a region
+
+**Version 2: Biogeographic status only**
+
+Only whether a species is native or alien is of interest. This can be relevant when the status is needed for another data set.
+
+### 2. Native ranges
+
+In a first step, native ranges are defined. Those serve as baseline thereafter and should not be changed to alien, i.e. alien ranges then can be added only *outside* the defined native range.
+
+**Sources to use**:
+
+-   GIFT
+
+-   WCVP
+
+**New columns:**
+
+-   'status_combined': in a first step this is filled with 'native' if one of the two sources (GIFT, WCVP) classify it so. Other rows are empty. Note that at this stage the versions do not differ.
+
+**Define native range**
+
+```{r status_add_native}
+
+plant_communities %<>%
+  mutate(# If WCVP or GIFT status is native then ‚native‘
+         status_combined = case_when(status_native_wcvp == 1 | status_native_gift2 == 1 ~ "native", 
+                                     .default = ""),
+  )
+
+```
+
+**GIFT validation**
+
+**New or changed columns:**
+
+-   'status_combined_V1a': If flagged then change to 'undefined status', as likely alien but not sure if actually naturalized.
+
+-   'status_combined_V1b': Leave as is
+
+-   'status_combined_V2a': If flagged then change to 'alien', assuming that WCVP as authoritative source is correct here.
+
+-   'status_combined_V2b': Leave as is
+
+```{r status_correct_conflict}
+
+plant_communities %<>% 
+  rowwise() %>% 
+  mutate(
+    ### V1 Biogeographic and naturalisation status
+    # Option 1 -If flagged then change to ‚undefined status‘ (i.e. likely alien but not sure if naturalized)
+    status_combined_V1a =  case_when(grepl("TRUE", gift_native_flag) ~ "", 
+                                    .default = status_combined),
+    # Option 2 - trust the data, leave as is
+    status_combined_V1b = status_combined,
+    
+    ### V2 Biogeographic status only
+    # Version 1 - only interested in biogeographic status (origin), not establishment status 
+    status_combined_V2a = case_when(grepl("TRUE", gift_native_flag)  ~ "alien", 
+                                    .default = status_combined),
+    # Version 2 - trust the data, leave as is
+    status_combined_V2b = status_combined) %>% 
+  select(-status_combined)
+```
+
+### 3. Alien ranges
+
+In the next step, alien ranges are added. Following the rationale from above, those are only added, if the occurrence was not already classified as native.
+
+**Sources to use**:
+
+-   GloNAF
+
+-   (WCVP)
+
+-   (GIFT)
+
+Main criterion for inclusion of sources:
+
+-   Is research focus on only naturalised occurrences or all introduced occurrences? (--\> Version 1)\
+    Tradeoff between potentially more complete picture and potential overestimation of alien naturalised range as the WCVP category includes both naturalised and casuals
+
+```{r status_add_alien}
+plant_communities %<>%
+  mutate(### V1 - Biogeographic status and naturalisation status
+         # if not classified as native already and GloNAF status is alien then 'alien'
+         status_combined_V1a = case_when(status_combined_V1a == "" &  status_native_glonaf == 0 ~
+                                          "alien", .default = status_combined_V1a), 
+         status_combined_V1b = case_when(status_combined_V1b == "" & status_native_glonaf == 0
+                                                  ~"alien", .default = status_combined_V1b), 
+         ### V2 - Biogeographic status only
+         # if not classified as native or corrected to alien already and WCVP, GIFT or GloNAF status is alien then 'alien'
+         status_combined_V2a = case_when(status_combined_V2a == "" & 
+                                             (
+                                              status_native_glonaf == 0 | 
+                                              status_native_wcvp == 0 |
+                                              status_native_gift == 0
+                                              ) ~ "alien", .default =
+                                          status_combined_V2a),
+         status_combined_V2b = case_when(status_combined_V2b == "" & 
+                                           (
+                                               status_native_glonaf == 0 | 
+                                               status_native_wcvp == 0 |
+                                               status_native_gift == 0) ~ "alien", .default =
+                                          status_combined_V2b)
+  )
+```
+
+For each version, add a column that indicates the source of the status. This is done using the combined status (i.e. the status assigned in the end and the logical columns of the sources (native indicated yes/no). \
+E.g. if the final status is native, the 'status_native'-columns of WCVP and GIFT are checked, and if the column contains a 1 (TRUE, native) then the source name is pasted to the output. Note that the conditions for the different versions slightly differ, depending on the sources used for different status classes. \
+If the status is empty, then the source is GIFT, as this is the only one that also showed occurrences without biogeographic status assigned.
+
+```{r status_add_source}
+plant_communities %<>%
+  rowwise() %>%
+  mutate(
+    ### Status source V1a
+    status_source_V1a = case_when(status_combined_V1a == "native" ~  
+                                         paste(na.omit(c("WCVP", "GIFT")[c(status_native_wcvp == 1,
+                                                                           status_native_gift2 == 1)]),
+                                               collapse = ", "),
+                                       status_combined_V1a == "alien" ~ "GloNAF",
+                                       status_combined_V1a == "" ~ "GIFT", .default = ""),
+
+   ### Status source V1b
+   status_source_V1b = case_when(status_combined_V1b == "native" ~  
+                                         paste(na.omit(c("WCVP", "GIFT")[c(status_native_wcvp == 1,
+                                                                           status_native_gift2 == 1)]),
+                                               collapse = ", "),
+                                       status_combined_V1b == "alien" ~ "GloNAF",
+                                       status_combined_V1b == "" ~ "GIFT", .default = ""),
+   
+    ### Status source V2a
+    status_source_V2a = case_when(status_combined_V2a == "native" ~  
+                                    paste(na.omit(c("WCVP", "GIFT")[c(status_native_wcvp == 1,
+                                                                      status_native_gift2 == 1)]),
+                                               collapse = ", "),
+                                 status_combined_V2a == "alien" ~ 
+                                  paste(na.omit(c("WCVP", "GloNAF", "GIFT")[c(status_native_wcvp == 0,
+                                                                              status_native_glonaf == 0,  (status_native_gift2 == 0| (status_native_gift2 == 1 & grepl("TRUE",gift_native_flag))))]),
+                                               collapse = ", "), 
+                                status_combined_V1b == "" ~ "GIFT",
+                                 .default = ""  ),
+   
+   ### Status source V2b
+   status_source_V2b = case_when(status_combined_V2b == "native" ~  
+                                    paste(na.omit(c("WCVP", "GIFT")[c(status_native_wcvp == 1,
+                                                                      status_native_gift2 == 1)]),
+                                               collapse = ", "),
+                                 status_combined_V2b == "alien" ~ 
+                                  paste(na.omit(c("WCVP", "GloNAF", "GIFT")[c(status_native_wcvp == 0,
+                                                                              status_native_glonaf == 0,  (status_native_gift2 == 0| (status_native_gift2 == 1 & grepl("TRUE",gift_native_flag))))]),
+                                               collapse = ", "), 
+                               status_combined_V1b == "" ~ "GIFT",
+                                 .default = ""  )
+  ) %>% ungroup()
+
+
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+plant_communities %>% filter(species == "Physalis angulata") %>% select(status_native_gift2, status_native_wcvp, status_native_glonaf,LEVEL1_NAM, LEVEL3_COD, status_combined_V1a:status_combined_V2b, status_conflict:status_conflict_wcvp_glonaf, status_source_V1a:status_source_V2b) %>% View()
+```
+
+**Exploration:**
+
+How do the approaches differ in their result?
+
+```{r compare_status_version}
+#| echo: false
+
+dat_long <- plant_communities %>% select(status_combined_V1a:status_combined_V2b) %>% 
+         pivot_longer(cols = c(status_combined_V1a:status_combined_V2b),
+                      names_to = "Version", values_to = "Status") %>% 
+  group_by(Version, Status) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Version) %>%
+  mutate(percentage = count / sum(count) * 100,
+         label = paste0(count, " (", round(percentage, 1), "%)"))
+
+
+ggplot(data = dat_long, aes(x = Version, y = count, fill = Status)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("grey", "red", "lightgreen")) +
+  geom_text(aes(label = label), 
+            position = position_stack(vjust = 0.5), size = 3) +
+  scale_x_discrete(labels = c("status_combined_V1a" = "Version 1a\n(corrected after\nGIFT validation)",
+                              "status_combined_V1b" = "Version 1b",
+                              "status_combined_V2a" = "Version 2a\n(corrected after\nGIFT validation)", 
+                              "status_combined_V2b" = "Version 2b"
+)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+rm(dat_long)
+```
+
+**How much records are lacking a status after this classification?**
+
+Number differs between approaches. Records without a biogeographic status can have two causes:
+
+(1) record is based on GIFT only and came without a status in the first place
+
+(2) record is based on GIFT only and was classified as alien, but not considered
+
+The latter case was discussed at the meeting and it was agreed upon that only the native distribution data should be used (if focus is biogeographic and naturalisation status).
+
+## Visualise
+
+First create two plotting functions:
+
+-   **plot_status_overview(Taxon, version, linewidth_cust, gift_flag_col)** \
+    Input: \
+    - Taxon: Binomial species name\
+    - version: either "V1a", "V1b", "V2a", or "V2b"\
+    - linewidth: width of region borders (default = 1)\
+    - gift_flag_col: colour of crosshatched pattern for indicating flagged regions (default = "red")\
+    Output: a multiplot \
+    Gives a detailed overview on the chosen version, with one plot showing the harmonised status and three others the contribution of the sources.
+
+-   **plot_status_compare_versions(Taxon, linewidth_cust, gift_flag_col)\
+    **Input: \
+    - Taxon: Binomial species name\
+    - linewidth: width of region borders (default = 1)\
+    - gift_flag_col: colour of crosshatched pattern for indicating flagged regions (default = "red")\
+    Output: a multiplot\
+    Compares the resulting harmonised status for the four approaches.
+
+```{r define_plotting_function}
+#| echo: false
+
+plot_status_overview <- function(Taxon, version, linewidth_cust =1, gift_flag_col = "red"){ 
+
+##################
+## Colouring:
+status_colors <- c(   "alien" = "#fcbba1", 
+                      "native" = "#c7e9c0" )
+
+sources_colors <- c("GIFT" = "#2166ac",
+                    "GloNAF" = "#b2182b",
+                    "GloNAF, GIFT" = "purple",
+                    "WCVP" = "yellow4", 
+                    "WCVP, GIFT" = "green4",   
+                    "WCVP, GloNAF" = "darkorange4", 
+                    "WCVP, GloNAF, GIFT" = "black"
+                    )  
+  
+  
+################## 
+### Prepare data: 
+# subset and link to spatial data
+subset <- plant_communities %>% 
+  filter(species == Taxon) %>%
+  left_join(., tdwg %>% select(LEVEL3_COD, geometry), by= "LEVEL3_COD") %>% 
+  st_as_sf() %>% 
+  # identify status column 
+  rename(status = all_of(paste0("status_combined_", version)), 
+         status_source = all_of(paste0("status_source_", version))) %>% 
+  select(species, LEVEL3_COD, status, status_source, 
+         native_continent_wcvp, gift_native_flag) %>% 
+  mutate(
+    # make sure the fill and col variables have all levels: 
+    status = factor(status, levels = names(status_colors)),
+    status_source = factor(status_source, levels = names(sources_colors))
+  )
+
+##################
+### Title 
+t <- paste0("**_", unique(subset$species),"_**<br>",
+            "(native range = ", unique(subset$native_continent_wcvp) ,")<br>",
+            "approach used = ", version)   
+
+##################
+### Fixed plotting elements
+# Common basemap layer
+base_map <- geom_sf(data = regions_rnaturalearth, col = "white", fill = "grey75")
+
+# Common color scales
+fill_scale <- scale_fill_manual(values = status_colors, 
+                                drop = FALSE, 
+                                na.value = "grey50", 
+                                name = "Biostatus")
+
+color_scale <- scale_color_manual(values = sources_colors,
+                                  drop = FALSE,
+                                  na.value = "grey50",
+                                  name = "Sources")
+
+pattern_scale <- scale_pattern_manual(values = c('TRUE (direct)' = 'crosshatch',
+                                                 'TRUE (indirect)' = 'crosshatch'), 
+                                      na.value = "none", 
+                                      name = "GIFT native status\n flagged")
+
+###################
+### Define sources for this run
+sources_run <- intersect(names(sources_colors), unique(subset$status_source))
+
+
+################## 
+### Subplots
+
+
+## Status overall
+p_1 <- ggplot() +   
+  # add world as background
+  base_map +
+  
+  # add native and alien distribution data for species of interest
+  geom_sf_pattern(data = subset, 
+                             aes(col = status_source, 
+                                 fill = status, 
+                                 pattern = gift_native_flag),
+                             pattern_density = 0.1,
+                             pattern_fill = gift_flag_col,
+                             pattern_colour = gift_flag_col,
+                             pattern_spacing = 0.02, 
+                             pattern_size = 0.5,
+                             linewidth = linewidth_cust
+                             ) +
+  # add title
+  ggtitle("Status combined sources")  +
+  
+  # define colouring for plot and legend
+  fill_scale +   color_scale + pattern_scale +
+  guides(pattern = "none",
+         fill = guide_legend(override.aes = list(pattern = "none")), 
+         color = guide_legend(override.aes = list(pattern = "none"#, 
+                                                 # fill = sources_colors[sort(sources_run)]
+                                                  )))  +
+
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+
+make_source_plot <- function(source_name, title_text, show_pattern = FALSE) {
+  if(show_pattern == FALSE){
+     p <-  ggplot() +
+      base_map +
+      geom_sf(
+        data = subset %>% filter(grepl(source_name, status_source)),
+        aes(col = status_source, fill = status),
+        linewidth = linewidth_cust,
+        show.legend = FALSE) +
+      ggtitle(title_text) +
+      fill_scale + color_scale +
+      guides(color = guide_legend(override.aes = list(fill = sources_colors[sort(sources_run)]
+                                                      ))) +
+      theme_minimal()
+  } 
+  if(show_pattern == TRUE){
+    p <-  ggplot() +
+      base_map +
+      geom_sf_pattern(
+        data = subset %>% filter(grepl(source_name, status_source)),
+        aes(col = status_source, fill = status, pattern = gift_native_flag),
+        pattern_density = 0.1,
+        pattern_fill = "transparent",
+        pattern_colour =gift_flag_col,
+        pattern_spacing = 0.02, 
+        pattern_size = 0.5,
+        linewidth = linewidth_cust,
+        show.legend = FALSE) +
+      ggtitle(title_text) +
+      fill_scale + color_scale + pattern_scale +
+      guides(pattern = "none",
+             fill = guide_legend(override.aes = list(pattern = "none")), 
+             color = guide_legend(override.aes = list(pattern = "none", 
+                                                  fill = sources_colors[sort(sources_run)]
+                                                  ))) +
+      theme_minimal()
+  }
+  
+      return(p)
+}
+
+
+### Individual source plots
+p_2 <- make_source_plot("WCVP", "WCVP")
+p_3 <- make_source_plot("GIFT", "GIFT", show_pattern = TRUE)
+p_4 <- make_source_plot("GloNAF", "GloNAF")
+
+
+
+# Combine plots into a 2x2 layout
+combined_plots <- (p_1 + p_2) / (p_3 + p_4) + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = "bottom")
+
+
+library(ggtext)
+# Add title and return final plot
+final_plot <- combined_plots +
+  plot_annotation(title = t, theme = theme(plot.title =element_markdown(size = 14, face = "plain", hjust = 0.5)))
+
+return(final_plot)
+}
+```
+
+```{r define_plotting_function2}
+#| echo: false
+
+plot_status_compare_versions <- function(Taxon, linewidth_cust = 1, gift_flag_col = "red"){ 
+
+##################
+## Colouring:
+status_colors <- c("alien" = "#fcbba1", 
+                   "native" = "#c7e9c0" )
+
+sources_colors <- c("GIFT" = "#2166ac",
+                    "GloNAF" = "#b2182b",
+                    "GloNAF, GIFT" = "purple",
+                    "WCVP" = "yellow4", 
+                    "WCVP, GIFT" = "green4",   
+                    "WCVP, GloNAF" = "darkorange4", 
+                    "WCVP, GloNAF, GIFT" = "black"
+                    )  
+
+  
+##  
+base_map <- geom_sf(data = regions_rnaturalearth, col = "white", fill = "grey75") 
+   
+
+# Common color scales
+fill_scale <- scale_fill_manual(values = status_colors, 
+                                drop = FALSE, 
+                                 na.translate = FALSE, 
+                                na.value = "grey50", 
+                                name = "Biostatus")
+
+color_scale <- scale_color_manual(values = sources_colors,
+                                  drop = FALSE,
+                                  name = "Sources")
+
+pattern_scale <- scale_pattern_manual(values = c('TRUE (direct)' = 'crosshatch',
+                                                 'TRUE (indirect)' = 'crosshatch'), 
+                                      na.value = "none", 
+                                      name = "GIFT native status\n flagged")
+
+
+make_version_plot <- function(version) {
+
+subset <- plant_communities %>% 
+      filter(species == Taxon) %>%
+      left_join(., tdwg %>% select(LEVEL3_COD, geometry), by= "LEVEL3_COD") %>% 
+      st_as_sf() %>% 
+      # identify status column 
+      rename(status = all_of(paste0("status_combined_", version)), 
+             status_source = all_of(paste0("status_source_", version))) %>% 
+      select(species, LEVEL3_COD, status, status_source, 
+             native_continent_wcvp, gift_native_flag) %>% 
+      mutate(
+        # make sure the fill and col variables have all levels: 
+        status = factor(status, levels = names(status_colors)),
+        status_source = factor(status_source, levels = names(sources_colors))
+      )
+
+
+# === Dummy rows to force display of all factor levels ===
+  dummy_data <- expand.grid(
+    status = factor(names(status_colors), levels = names(status_colors)),
+    status_source = factor(names(sources_colors), levels = names(sources_colors)),
+    gift_native_flag = factor(c("TRUE (direct)", "TRUE (indirect)"), 
+                              levels = c("TRUE (direct)", "TRUE (indirect)"))
+  ) %>%
+    mutate(geometry = st_sfc(st_point(c(9999, 9999))), .before = 1,
+           is_dummy = TRUE) %>%  # dummy point
+    st_as_sf()
+
+  dummy_data %<>% st_set_crs(., st_crs(subset))
+
+subset <-bind_rows(subset, dummy_data)  # Add dummy levels
+
+p <- ggplot() +   
+  # add world as background
+  base_map +
+
+  
+  # add native and alien distribution data for species of interest
+  geom_sf_pattern(data = subset, 
+                             aes(col = status_source, 
+                                 fill = status, 
+                                 pattern = gift_native_flag),
+                             pattern_density = 0.1,
+                             pattern_fill = gift_flag_col,
+                             pattern_colour = gift_flag_col,
+                             pattern_spacing = 0.02, 
+                             pattern_size = 0.5,
+                             linewidth = linewidth_cust
+                             ) +
+  # add title
+  ggtitle(paste("Status combined sources", version))  +
+  
+  #
+  # Lock extent to base map
+  coord_sf(
+    xlim = st_bbox(regions_rnaturalearth)[c("xmin", "xmax")],
+    ylim = st_bbox(regions_rnaturalearth)[c("ymin", "ymax")],
+    expand = FALSE
+  ) +
+  
+  
+  # define colouring for plot and legend
+  fill_scale +   color_scale + pattern_scale +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  guides(
+        pattern = "none",
+        fill = guide_legend(override.aes = list(pattern = "none")),
+        color = guide_legend(override.aes = list(pattern = "none"), 
+                                                  fill = sources_colors)
+      ) 
+
+return(p)
+
+}
+
+
+
+### Individual source plots
+p_1 <- make_version_plot(version = "V1a")
+p_2 <- make_version_plot(version = "V1b")
+p_3 <- make_version_plot(version = "V2a")
+p_4 <- make_version_plot(version = "V2b")
+
+
+##################
+### Title 
+nat_cont <- plant_communities %>% filter(species == Taxon) %>% pull(native_continent_wcvp) %>% unique() %>% sort()
+
+t <- paste0("**_", Taxon,"_**<br>",
+            "(native range = ", nat_cont ,")<br>")   
+
+
+# Combine plots into a 2x2 layout
+combined_plots <- (p_1 + p_2) / (p_3 + p_4) + 
+    plot_layout(guides = "collect") & 
+    theme(legend.position = "bottom")
+
+# Add title  and return final plot
+final_plot <- combined_plots  +
+  plot_annotation(title = t, 
+                  theme = theme(plot.title =element_markdown(size = 14, face = "plain", hjust = 0.5))) 
+
+return(final_plot)
+}
+```
+
+### Case examples
+
+::: callout-note
+Note that red hatched regions are those that were flagged after GIFT validation, i.e. the native status conflicts either with WCVP (direct conflict) or WCVP native continental range (indirect conflict)
+:::
+
+#### *Physalis angulata*
+
+now widely distributed and naturalized in tropical and subtropical regions worldwide.
+
+**Result of plant data harmonisation**
+
+Here's a comparison of the results of the different approaches:
+
+```{r plot_compare_versions_Physalis_angulata}
+#| echo: false
+#| fig.width: 15
+#| fig.height: 10
+
+plot_status_compare_versions(Taxon = "Physalis angulata")
+
+ggsave("images/examples/physalis_angulata.png", width = 14, height = 7)
+
+
+```
+
+Here's a more detailed overview on the
+
+Version 1a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Physalis_angulata1}
+#| echo: false
+#| fig.width: 15
+#| fig.height: 10
+
+plot_status_overview(Taxon = "Physalis angulata",  version = "V1a")
+ggsave("images/examples/physalis_angulata_V1a.png", width = 14, height = 7)
+
+```
+
+Version 2a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Physalis_angulata2}
+#| echo: false
+#| fig.width: 15
+#| fig.height: 10
+#| 
+p_phy_ang_V2a <- plot_status_overview(Taxon = "Physalis angulata", version = "V2a")
+
+
+ggsave("images/examples/physalis_angulata_V2a.png", width = 14, height = 7)
+
+```
+
+According to WCVP and GloNAF alien outside the Americas. Note that there is one error here in WCVP classifying it as native in Albania (this error is already corrected in the WCVP online version).
+
+GIFT: classifies the species as native in the Americas, but also in tropical regions of Africa and Asia/Australia (= those areas are conflicting areas according to native continent comparison and therefore flagged)
+
+#### *Poa annua*
+
+Old-world species of northern hemisphere. Introduced globally.
+
+**Result of plant data harmonisation**
+
+Here's a comparison of the results of the different approaches:
+
+```{r plot_compare_versions_Poa_annua}
+#| echo: false 
+#| fig.width: 15
+#| fig.height: 10  
+
+plot_status_compare_versions(Taxon = "Poa annua")  
+
+ggsave("images/examples/poa_annua.png", width = 14, height = 7) 
+```
+
+Here's a more detailed overview on the
+
+Version 1a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Poa_annua1}
+#| echo: false 
+#| fig.width: 15
+#| fig.height: 10  
+
+plot_status_overview(Taxon = "Poa annua",  version = "V1a") 
+
+ggsave("images/examples/poa_annua_V1a.png", width = 14, height = 7) 
+```
+
+Version 2a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Poa_annua2}
+#| echo: false 
+#| fig.width: 15
+#| fig.height: 10  
+
+
+plot_status_overview(Taxon = "Poa annua",  version = "V2a") 
+
+ggsave("images/examples/poa_annua_V2a.png", width = 14, height = 7) 
+```
+
+#### ***Pinus sylvestris***
+
+```{r plot_compare_versions_Pinus_sylvestris}
+#| echo: false 
+#| fig.width: 15
+#| fig.height: 10
+
+plot_status_compare_versions(Taxon = "Pinus sylvestris") 
+
+ggsave("images/examples/pinus_sylvestris.png", width = 14, height = 7) 
+```
+
+Here's a more detailed overview on the
+
+Version 1a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Pinus_sylvestris1}
+#| echo: false
+#| fig.width: 20
+#| fig.height: 13
+
+plot_status_overview(Taxon = "Pinus sylvestris", version = "V1a")
+
+
+ggsave("images/examples/pinus_sylvestris_V1a.png", width = 14, height = 7)
+```
+
+Version 2a - Biogeographic and naturalisation status (GIFT validation)
+
+```{r plot_Pinus_sylvestris2}
+#| echo: false
+#| fig.width: 15
+#| fig.height: 10
+
+plot_status_overview(Taxon = "Pinus sylvestris", version = "V2a")
+
+
+ggsave("images/examples/pinus_sylvestris_V2a.png", width = 14, height = 7)
+
+```
